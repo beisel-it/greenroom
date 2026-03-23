@@ -1,0 +1,18 @@
+# Progress Log
+Run: 2e15fbac-5d28-4f1f-b5e4-e66163df6874
+Task: US-002 Catalog index and facet filters
+Started: 2026-03-24 00:28 CET
+
+## Codebase Patterns
+- Catalog content lives in `content/catalog` as Markdown frontmatter parsed via `gray-matter`; `getCatalogEntities` sorts entities alphabetically by title.
+- Tests run with Vitest from `tests/**/*.test.ts` using the Node environment.
+
+---
+
+## 2026-03-24 00:30 CET - US-002-1: Add catalog data helpers and test harness
+- Added Vitest test runner with minimal config and npm script.
+- Extended catalog utilities to expose unique facets (owners, teams, tags) and to filter entities by owner/team/tag combinations.
+- Added tests covering facet collection and filtering logic against the Markdown catalog data.
+- Files changed: `package.json`, `package-lock.json`, `vitest.config.ts`, `lib/content.ts`, `tests/content.test.ts`.
+- **Learnings:** Facet lists are derived directly from Markdown frontmatter, so new catalog entries automatically flow into filters; filtering expects exact matches and requires all requested tags to be present.
+---
