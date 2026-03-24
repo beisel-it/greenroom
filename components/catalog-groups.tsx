@@ -5,7 +5,7 @@ import {
   CatalogGroupedEntities,
   CatalogKind,
   catalogKindOrder,
-} from '@/lib/content';
+} from '@/lib/catalog-shared';
 
 const kindCopy: Record<CatalogKind, { heading: string; description: string; empty: string }> = {
   org: {

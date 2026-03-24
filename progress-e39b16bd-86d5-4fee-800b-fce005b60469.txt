@@ -6,6 +6,7 @@ Started: 2026-03-24 01:43 CET
 ## Codebase Patterns
 - Catalog grouping uses catalogKindOrder; keep all kinds present with empty arrays to maintain ordering.
 - Catalog filters apply AND semantics for owner, team, and tags; tag filters are deduped and require all requested tags.
+- Shared catalog helpers (types, catalogKindOrder, filterCatalogEntities, groupCatalogEntities) live in lib/catalog-shared so client components stay free of node:fs/path imports.
 - Tests run with `npm test` (Vitest).
 - Component tests can traverse React element trees directly (using React.isValidElement/Children) to inspect props and invoke handlers without a DOM environment.
 
@@ -23,4 +24,11 @@ Started: 2026-03-24 01:43 CET
 - Added tests covering facet-derived options rendering and callback behavior for setting and clearing filters.
 - Files changed: components/catalog-filter-controls.tsx, tests/catalog-filter-controls.test.tsx, progress-e39b16bd-86d5-4fee-800b-fce005b60469.txt
 - **Learnings:** rendering function components directly in tests returns the element tree, allowing traversal to access nested props and invoke onChange handlers without a DOM.
+---
+## 2026-03-24 02:10 CET - US-002-03: Wire catalog page to apply filters and display grouped results
+- Wired the catalog landing page to a client CatalogPageContent that manages owner/team/tag filters and feeds filtered, regrouped entities to CatalogGroups while preserving hero/copy.
+- Extracted shared catalog helpers to lib/catalog-shared and added deriveGroupedCatalog so filtering/grouping stays consistent across client usage and tests without pulling node:fs/path into the client bundle.
+- Expanded catalog page tests to cover hero/filters/default grouping, empty states, filtered group results (owner/tag), and reset behavior; build/typecheck now pass with the interactive filtering.
+- Files changed: app/catalog/page.tsx, components/catalog-page-content.tsx, components/catalog-groups.tsx, components/catalog-filter-controls.tsx, lib/catalog-shared.ts, lib/content.ts, tests/catalog-page.test.tsx
+- **Learnings:** keeping shared catalog logic in a server-safe module lets client components reuse it without bundling filesystem deps; deriveGroupedCatalog ensures grouped empty states remain intact after filtering and when filters reset.
 ---

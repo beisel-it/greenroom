@@ -1,9 +1,9 @@
 import React from 'react';
-import { CatalogGroups } from '@/components/catalog-groups';
+import { CatalogPageContent } from '@/components/catalog-page-content';
 import { getCatalogContent } from '@/lib/content';
 
 export default function CatalogPage() {
-  const { grouped } = getCatalogContent();
+  const { entities, facets } = getCatalogContent();
 
   return (
     <>
@@ -16,7 +16,7 @@ export default function CatalogPage() {
         </p>
       </section>
 
-      <CatalogGroups grouped={grouped} />
+      <CatalogPageContent entities={entities} facets={facets} />
     </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { CatalogFacets, CatalogFilters } from '@/lib/content';
+import type { CatalogFacets, CatalogFilters } from '@/lib/catalog-shared';
 
 type CatalogFilterControlsProps = {
   facets: CatalogFacets;
