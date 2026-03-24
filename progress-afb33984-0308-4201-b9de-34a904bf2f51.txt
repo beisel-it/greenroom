@@ -9,6 +9,7 @@ Started: 2026-03-24 05:18 CET
 - Vitest runs via `npm test`; `npm run build` performs Next.js build with type-checking.
 - Components that use Next.js Link are mocked to plain anchors in tests; keep React imported when server-rendering with Vitest.
 - Docs pages consume the doc tree and pass `slug.join('/')` as the active slug for sidebar highlighting.
+- Docs layout lives in `app/docs/layout` and reads `params.slug` (Promise) to set active sidebar links; doc content renders inside `.docs-content` while the sidebar remains sticky.
 
 ---
 
@@ -26,4 +27,12 @@ Started: 2026-03-24 05:18 CET
 - Added styling for the docs layout/grid and nav link states, plus unit tests covering sidebar rendering and active highlighting.
 - Files changed: `components/docs-sidebar.tsx`, `app/docs/[...slug]/page.tsx`, `app/globals.css`, `tests/docs-sidebar.test.tsx`.
 - **Learnings:** Sidebar highlighting relies on `slug.join('/')` to match doc nav slugs; Link mocking keeps server-rendered tests simple while preserving class/aria attributes.
+---
+
+## 2026-03-24 06:23 CET - US-004-3: Add docs layout shell with sidebar and index page
+- Added shared `app/docs/layout` that loads the doc tree once, drives active sidebar state from route params, and wraps all docs pages in a consistent shell.
+- Created `/docs` index page that recursively lists sections/pages from the doc tree using shared link styles, with cards for top-level sections.
+- Simplified individual doc pages to render content within the layout shell, expanded docs styles for content/index lists, and added tests for layout/index rendering.
+- Files changed: `app/docs/layout.tsx`, `app/docs/page.tsx`, `app/docs/[...slug]/page.tsx`, `app/globals.css`, `tests/docs-layout.test.tsx`, `tests/docs-index.test.tsx`.
+- **Learnings:** Layout receives `params.slug` as a Promise (empty on /docs) to highlight sidebar links; server-rendered JSX in tests needs React imported when using preserved JSX transform; doc index can reuse nav link styling for consistency.
 ---
