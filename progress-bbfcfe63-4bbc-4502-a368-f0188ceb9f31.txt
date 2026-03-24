@@ -1,0 +1,18 @@
+# Progress Log
+Run: bbfcfe63-4bbc-4502-a368-f0188ceb9f31
+Task: US-003 Entity relationship panels
+Started: 2026-03-24 02:54 CET
+
+## Codebase Patterns
+- Content helpers live in lib/content.ts and operate on CatalogEntity arrays derived from Markdown frontmatter.
+- Tests now use Vitest and can be run with `npm test`; Vitest handles TypeScript directly without extra config.
+
+---
+
+## 2026-03-24 03:59 CET - US-003-1: Derive catalog relationships and broken references
+- Implemented deriveCatalogRelationships helper to build team-to-systems and system-to-components maps with slug-first, title-fallback resolution and broken reference reporting (referencing entity metadata included).
+- Added Vitest coverage for slug/title resolution and broken-reference detection.
+- Ran `npm test` and `npm run build` (typecheck) successfully.
+- Files changed: lib/content.ts, lib/content.test.ts, package.json, package-lock.json
+- **Learnings:** Reference resolution should normalize on slug first then title for backward compatibility. Broken reference entries need to carry the referencing entity metadata (kind, slug, title, field, target) to surface UI warnings.
+---

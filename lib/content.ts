@@ -17,6 +17,26 @@ export type CatalogEntity = {
   body: string;
 };
 
+export type EntityReference = {
+  slug: string;
+  title: string;
+  kind: CatalogKind;
+};
+
+export type BrokenReference = {
+  kind: CatalogKind;
+  slug: string;
+  title: string;
+  field: 'team' | 'system';
+  target: string;
+};
+
+export type CatalogRelationships = {
+  teamSystems: Record<string, EntityReference[]>;
+  systemComponents: Record<string, EntityReference[]>;
+  brokenReferences: BrokenReference[];
+};
+
 export type DocPage = {
   slugParts: string[];
   slug: string;
@@ -60,6 +80,89 @@ export function getCatalogEntities(): CatalogEntity[] {
 
 export function getCatalogEntity(slug: string) {
   return getCatalogEntities().find((entity) => entity.slug === slug);
+}
+
+function normalizeKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function buildLookup(entities: CatalogEntity[]) {
+  const bySlug = new Map<string, CatalogEntity>();
+  const byTitle = new Map<string, CatalogEntity>();
+
+  for (const entity of entities) {
+    bySlug.set(normalizeKey(entity.slug), entity);
+    byTitle.set(normalizeKey(entity.title), entity);
+  }
+
+  return { bySlug, byTitle };
+}
+
+function resolveReference(value: string | undefined, lookup: ReturnType<typeof buildLookup>) {
+  if (!value) return undefined;
+  const key = normalizeKey(value);
+  return lookup.bySlug.get(key) ?? lookup.byTitle.get(key);
+}
+
+function addRelationship(map: Record<string, EntityReference[]>, key: string, ref: EntityReference) {
+  const entries = map[key] ?? [];
+  if (!entries.some((entry) => entry.slug === ref.slug)) {
+    entries.push(ref);
+  }
+  map[key] = entries;
+}
+
+const toReference = (entity: CatalogEntity): EntityReference => ({
+  slug: entity.slug,
+  title: entity.title,
+  kind: entity.kind,
+});
+
+export function deriveCatalogRelationships(entities: CatalogEntity[]): CatalogRelationships {
+  const teams = entities.filter((entity) => entity.kind === 'team');
+  const systems = entities.filter((entity) => entity.kind === 'system');
+  const components = entities.filter((entity) => entity.kind === 'component');
+
+  const teamLookup = buildLookup(teams);
+  const systemLookup = buildLookup(systems);
+
+  const relationships: CatalogRelationships = {
+    teamSystems: {},
+    systemComponents: {},
+    brokenReferences: [],
+  };
+
+  for (const system of systems) {
+    const resolvedTeam = resolveReference(system.team, teamLookup);
+    if (resolvedTeam) {
+      addRelationship(relationships.teamSystems, resolvedTeam.slug, toReference(system));
+    } else if (system.team) {
+      relationships.brokenReferences.push({
+        kind: system.kind,
+        slug: system.slug,
+        title: system.title,
+        field: 'team',
+        target: system.team,
+      });
+    }
+  }
+
+  for (const component of components) {
+    const resolvedSystem = resolveReference(component.system, systemLookup);
+    if (resolvedSystem) {
+      addRelationship(relationships.systemComponents, resolvedSystem.slug, toReference(component));
+    } else if (component.system) {
+      relationships.brokenReferences.push({
+        kind: component.kind,
+        slug: component.slug,
+        title: component.title,
+        field: 'system',
+        target: component.system,
+      });
+    }
+  }
+
+  return relationships;
 }
 
 export function getDocPages(): DocPage[] {
