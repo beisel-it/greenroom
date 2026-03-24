@@ -1,4 +1,7 @@
+import React from 'react';
 import { notFound } from 'next/navigation';
+
+import { DocsPrevNext } from '@/components/docs-prev-next';
 import { Markdown } from '@/components/markdown';
 import { getDocPage, getDocPages } from '@/lib/content';
 
@@ -12,11 +15,12 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
   if (!page) notFound();
 
   return (
-    <section className="panel">
+    <article>
       <div className="kicker">Documentation</div>
       <h1>{page.title}</h1>
       <p className="muted">{page.summary}</p>
       <Markdown content={page.body} />
-    </section>
+      <DocsPrevNext currentSlug={page.slug} />
+    </article>
   );
 }
