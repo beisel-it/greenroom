@@ -7,6 +7,8 @@ import {
   getCatalogContent,
   getCatalogEntities,
   getCatalogFacets,
+  getDocNavList,
+  getDocTree,
   groupCatalogEntities,
 } from '../lib/content';
 
@@ -227,5 +229,43 @@ describe('catalog content helpers', () => {
     expect(catalog.grouped.team.map((entity) => entity.slug)).toEqual(['platform']);
     expect(catalog.facets.owners).toEqual(['beisel-it', 'Platform Team']);
     expect(catalog.facets.tags).toContain('portal');
+  });
+});
+
+describe('docs navigation helpers', () => {
+  it('builds a hierarchical tree with filesystem-driven ordering', () => {
+    const tree = getDocTree();
+
+    expect(tree.map((node) => node.slug)).toEqual(['getting-started']);
+    expect(tree[0].title).toBe('Getting Started');
+    expect(tree[0].children.map((child) => child.slug)).toEqual([
+      'getting-started/contributing',
+      'getting-started/overview',
+    ]);
+    expect(tree[0].children[0].summary).toContain('Markdown');
+    expect(tree[0].children[1].title).toBe('Overview');
+  });
+
+  it('flattens the tree into an ordered list with previous and next neighbors', () => {
+    const nav = getDocNavList();
+
+    expect(nav.map((item) => item.slug)).toEqual([
+      'getting-started/contributing',
+      'getting-started/overview',
+    ]);
+
+    expect(nav[0].previous).toBeUndefined();
+    expect(nav[0].next).toEqual({
+      slug: 'getting-started/overview',
+      title: 'Overview',
+      slugParts: ['getting-started', 'overview'],
+    });
+
+    expect(nav[1].previous).toEqual({
+      slug: 'getting-started/contributing',
+      title: 'Contributing content',
+      slugParts: ['getting-started', 'contributing'],
+    });
+    expect(nav[1].next).toBeUndefined();
   });
 });
