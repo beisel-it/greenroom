@@ -7,6 +7,7 @@ Started: 2026-03-24 02:54 CET
 - Content helpers live in lib/content.ts and operate on CatalogEntity arrays derived from Markdown frontmatter.
 - Tests now use Vitest and can be run with `npm test`; Vitest handles TypeScript directly without extra config.
 - Catalog accessors (getCatalogContent/getCatalogEntity) derive and attach systems/components/brokenReferences and accept optional entity overrides so tests can stay hermetic without filesystem reads.
+- Vitest needs the dedicated vitest.config.ts (with @vitejs/plugin-react and @ alias) because Next forces `jsx: preserve`; keep tests using that config so JSX is transformed.
 
 ---
 
@@ -22,4 +23,11 @@ Started: 2026-03-24 02:54 CET
 - Enriched catalog accessors so getCatalogContent/getCatalogEntity attach derived systems/components and brokenReferences per entity via deriveCatalogRelationships, with optional entity overrides for deterministic tests.
 - Files changed: lib/content.ts, lib/content.test.ts
 - **Learnings:** Relationship enrichment can be applied at access-time to avoid recomputing in pages, and allowing entity overrides keeps tests isolated from filesystem content.
+---
+
+## 2026-03-24 04:36 CET - US-003-3: Render relationship panels and warnings on catalog pages
+- Added CatalogEntityContent component to render entity details, relationship panels for teams (systems) and systems (components), plus a broken reference warning banner and empty states when no relationships exist.
+- Updated catalog page to use the shared component; styled warning card/list in globals. Introduced Vitest config with React plugin and aliasing, plus coverage verifying linked relationships and warning rendering. Added @vitejs/plugin-react dev dependency.
+- Files changed: components/catalog-entity-content.tsx, app/catalog/[slug]/page.tsx, app/catalog/[slug]/page.test.tsx, app/globals.css, package.json, package-lock.json, tsconfig.json, vitest.config.ts
+- **Learnings:** Next build resets tsconfig.jsx to `preserve`; Vitest needs its own config (with @vitejs/plugin-react and alias) to parse TSX with that setting. Page files cannot export arbitrary symbols—share testable components via separate modules.
 ---

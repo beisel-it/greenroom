@@ -44,3 +44,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
 .markdown table { width:100%; border-collapse: collapse; }
 .markdown th, .markdown td { border:1px solid var(--line); padding:8px 10px; text-align:left; }
 .mermaid { background:#fff; color:#111; padding:16px; border-radius:12px; overflow:auto; }
+.card.warning { border-color: #f5a524; background: rgba(245, 165, 36, 0.12); box-shadow: 0 0 0 1px rgba(245, 165, 36, 0.2); }
+.card.warning .kicker { color: #f5c26b; }
+.warning-list { list-style: disc; padding-left: 20px; margin: 12px 0 0; display: grid; gap: 8px; }
+.warning-list code { background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); }
