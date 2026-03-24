@@ -7,6 +7,8 @@ Started: 2026-03-24 05:18 CET
 - Docs navigation derives from filesystem traversal: directories are processed before files, all alphabetically, to keep deterministic order.
 - Synthetic section nodes are title-cased from slug segments; markdown pages override titles/summaries from frontmatter and carry isPage markers for nav flattening.
 - Vitest runs via `npm test`; `npm run build` performs Next.js build with type-checking.
+- Components that use Next.js Link are mocked to plain anchors in tests; keep React imported when server-rendering with Vitest.
+- Docs pages consume the doc tree and pass `slug.join('/')` as the active slug for sidebar highlighting.
 
 ---
 
@@ -16,4 +18,12 @@ Started: 2026-03-24 05:18 CET
 - Added deterministic markdown walker ordering and unit tests validating hierarchy and neighbor wiring for docs content.
 - Files changed: `lib/content.ts`, `tests/content.test.ts`.
 - **Learnings:** Directory nodes are synthesized from slug segments with folder paths; leaf nodes override metadata from frontmatter; navigation order follows depth-first traversal of sorted directories/files.
+---
+
+## 2026-03-24 06:14 CET - US-004-2: Render sidebar navigation from docs tree
+- Implemented `DocsSidebar` component to render nested section headings and page links from the generated doc tree with active page highlighting.
+- Updated docs page layout to include a sidebar fed by `getDocTree`, passing the current slug for active state and keeping the content panel intact.
+- Added styling for the docs layout/grid and nav link states, plus unit tests covering sidebar rendering and active highlighting.
+- Files changed: `components/docs-sidebar.tsx`, `app/docs/[...slug]/page.tsx`, `app/globals.css`, `tests/docs-sidebar.test.tsx`.
+- **Learnings:** Sidebar highlighting relies on `slug.join('/')` to match doc nav slugs; Link mocking keeps server-rendered tests simple while preserving class/aria attributes.
 ---
