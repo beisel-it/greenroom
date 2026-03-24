@@ -1,48 +1,65 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  CatalogEntity,
+  CatalogEntityWithRelationships,
   CatalogGroupedEntities,
   CatalogKind,
   catalogKindOrder,
-} from '@/lib/catalog-shared';
+} from '@/lib/catalog-core';
 
 const kindCopy: Record<CatalogKind, { heading: string; description: string; empty: string }> = {
-  org: {
-    heading: 'Organizations',
-    description: 'Top-level orgs that own teams and systems.',
-    empty: 'No organizations yet.',
+  Domain: {
+    heading: 'Domains',
+    description: 'Backstage domains that group systems by product area and ownership.',
+    empty: 'No domains yet.',
   },
-  team: {
-    heading: 'Teams',
-    description: 'Delivery groups with ownership over systems and components.',
-    empty: 'No teams yet.',
-  },
-  system: {
+  System: {
     heading: 'Systems',
-    description: 'Products, domains, or services operated by teams.',
+    description: 'Systems owned by teams and linked to domains, components, APIs, and resources.',
     empty: 'No systems yet.',
   },
-  component: {
+  Component: {
     heading: 'Components',
-    description: 'Deployables, jobs, packages, or websites under a system.',
+    description: 'Backstage components such as services, websites, or libraries within systems.',
     empty: 'No components yet.',
+  },
+  API: {
+    heading: 'APIs',
+    description: 'APIs provided or consumed by components, organized under systems.',
+    empty: 'No APIs yet.',
+  },
+  Resource: {
+    heading: 'Resources',
+    description: 'Operational dependencies like databases, queues, or external assets.',
+    empty: 'No resources yet.',
+  },
+  Location: {
+    heading: 'Locations',
+    description: 'Catalog descriptors that load or reference additional Backstage entities.',
+    empty: 'No locations yet.',
   },
 };
 
-function EntityCard({ entity }: { entity: CatalogEntity }) {
+function EntityCard({ entity }: { entity: CatalogEntityWithRelationships }) {
+  const summary = entity.metadata.description ?? entity.summary ?? 'View entity details';
+
   return (
     <Link key={entity.slug} href={`/catalog/${entity.slug}`} className="entity-link">
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
-        <strong>{entity.title}</strong>
-        <span className="badge">{entity.kind}</span>
+        <div>
+          <strong>{entity.title}</strong>
+          <div className="muted" style={{ marginTop: 4 }}>{entity.entityRef}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <span className="badge">{entity.kind}</span>
+        </div>
       </div>
-      <p className="muted">{entity.summary}</p>
+      <p className="muted">{summary}</p>
     </Link>
   );
 }
 
-function GroupSection({ kind, entities }: { kind: CatalogKind; entities: CatalogEntity[] }) {
+function GroupSection({ kind, entities }: { kind: CatalogKind; entities: CatalogEntityWithRelationships[] }) {
   const copy = kindCopy[kind];
   const hasEntities = entities.length > 0;
 

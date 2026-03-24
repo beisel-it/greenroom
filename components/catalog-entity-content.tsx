@@ -22,7 +22,7 @@ function RelationshipPanel({ title, entities, emptyMessage }: RelationshipPanelP
                 <strong>{ref.title}</strong>
                 <span className="badge">{ref.kind}</span>
               </div>
-              <p className="muted">View catalog entry</p>
+              <p className="muted">{ref.entityRef}</p>
             </Link>
           ))}
         </div>
@@ -39,8 +39,8 @@ function BrokenReferenceBanner({ references }: { references: BrokenReference[] }
       <div className="kicker">Broken references</div>
       <ul className="warning-list">
         {references.map((ref) => (
-          <li key={`${ref.slug}-${ref.field}-${ref.target}`}>
-            <strong>{ref.title}</strong> ({ref.kind}) has an unresolved {ref.field} reference to <code>{ref.target}</code>.
+          <li key={`${ref.source.entityRef}-${ref.field}-${ref.target}`}>
+            <strong>{ref.source.title}</strong> ({ref.source.kind}) has an unresolved {ref.field} reference to <code>{ref.target}</code> at {ref.location.file} (doc {ref.location.document}).
           </li>
         ))}
       </ul>
@@ -48,9 +48,19 @@ function BrokenReferenceBanner({ references }: { references: BrokenReference[] }
   );
 }
 
+function SummaryCard({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="card"><strong>{label}</strong><div className="muted">{value ?? '—'}</div></div>
+  );
+}
+
 export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRelationships }) {
-  const isTeam = entity.kind === 'team';
-  const isSystem = entity.kind === 'system';
+  const { relations } = entity;
+  const owner = 'owner' in entity.spec ? (entity.spec as { owner?: string }).owner : undefined;
+  const system = relations.system?.title ?? relations.system?.entityRef;
+  const domain = relations.domain?.title ?? relations.domain?.entityRef;
+
+  const showBody = Boolean(entity.summary || entity.metadata.description || entity.metadata.links?.length);
 
   return (
     <section className="panel">
@@ -60,34 +70,90 @@ export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRela
           <h1>{entity.title}</h1>
           <p className="muted">{entity.summary}</p>
         </div>
-        <div className="badge">{entity.slug}</div>
+        <div className="badge">{entity.entityRef}</div>
       </div>
 
       <div className="grid cols-3" style={{ margin: '20px 0' }}>
-        <div className="card"><strong>Owner</strong><div className="muted">{entity.owner ?? '—'}</div></div>
-        <div className="card"><strong>Team</strong><div className="muted">{entity.team ?? '—'}</div></div>
-        <div className="card"><strong>System</strong><div className="muted">{entity.system ?? '—'}</div></div>
+        <SummaryCard label="Owner" value={owner}
+        />
+        <SummaryCard label="Domain" value={domain} />
+        <SummaryCard label="System" value={system} />
       </div>
 
       <BrokenReferenceBanner references={entity.brokenReferences} />
 
-      {isTeam && (
+      {entity.kind === 'Domain' && (
         <RelationshipPanel
-          title="Linked systems"
-          entities={entity.systems}
-          emptyMessage="No systems are linked to this team yet."
+          title="Systems in domain"
+          entities={relations.systemsInDomain}
+          emptyMessage="No systems are linked to this domain yet."
         />
       )}
 
-      {isSystem && (
+      {entity.kind === 'System' && (
+        <div className="grid cols-3" style={{ gap: 16 }}>
+          <RelationshipPanel
+            title="Components"
+            entities={relations.componentsInSystem}
+            emptyMessage="No components linked to this system."
+          />
+          <RelationshipPanel
+            title="APIs"
+            entities={relations.apisInSystem}
+            emptyMessage="No APIs linked to this system."
+          />
+          <RelationshipPanel
+            title="Resources"
+            entities={relations.resourcesInSystem}
+            emptyMessage="No resources linked to this system."
+          />
+        </div>
+      )}
+
+      {entity.kind === 'API' && (
+        <div className="grid cols-2" style={{ gap: 16 }}>
+          <RelationshipPanel
+            title="Providing components"
+            entities={relations.providingComponents}
+            emptyMessage="No components provide this API yet."
+          />
+          <RelationshipPanel
+            title="Consuming components"
+            entities={relations.consumingComponents}
+            emptyMessage="No consumers detected."
+          />
+        </div>
+      )}
+
+      {entity.kind === 'Component' && (
+        <div className="grid cols-3" style={{ gap: 16 }}>
+          <RelationshipPanel
+            title="Provides APIs"
+            entities={relations.providesApis}
+            emptyMessage="No provided APIs declared."
+          />
+          <RelationshipPanel
+            title="Consumes APIs"
+            entities={relations.consumesApis}
+            emptyMessage="No consumed APIs declared."
+          />
+          <RelationshipPanel
+            title="Depends on"
+            entities={relations.dependsOn}
+            emptyMessage="No dependencies declared."
+          />
+        </div>
+      )}
+
+      {relations.dependents.length > 0 && (
         <RelationshipPanel
-          title="Linked components"
-          entities={entity.components}
-          emptyMessage="No components are linked to this system yet."
+          title="Dependents"
+          entities={relations.dependents}
+          emptyMessage=""
         />
       )}
 
-      <Markdown content={entity.body} />
+      {showBody && <Markdown content={entity.metadata.description ?? entity.summary ?? ''} />}
     </section>
   );
 }

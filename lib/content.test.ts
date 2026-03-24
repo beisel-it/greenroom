@@ -1,162 +1,158 @@
 import { describe, expect, it } from 'vitest';
-import * as content from './content';
 
-const baseTeam: content.CatalogEntity = {
-  slug: 'platform',
-  kind: 'team',
-  title: 'Platform Team',
-  summary: 'Platform ownership',
-  path: '/tmp/team.md',
-  body: '',
-};
+import {
+  attachCatalogRelationships,
+  deriveCatalogRelationships,
+  getCatalogEntity,
+} from './content';
+import { catalogEntityRef, catalogEntitySlug } from './catalog-loader';
+import type { LoadedCatalogEntity } from './catalog-loader';
+import { formatEntityRef } from './catalog-shared';
 
-const baseSystem: content.CatalogEntity = {
-  slug: 'dev-portal',
-  kind: 'system',
-  title: 'Developer Portal',
-  summary: 'Portal system',
-  path: '/tmp/system.md',
-  body: '',
-};
-
-const baseComponent: content.CatalogEntity = {
-  slug: 'greenroom-web',
-  kind: 'component',
-  title: 'Greenroom Web',
-  summary: 'Web UI',
-  path: '/tmp/component.md',
-  body: '',
-};
+function makeEntity(partial: Omit<LoadedCatalogEntity, 'entityRef' | 'slug' | 'location'> & { location?: LoadedCatalogEntity['location'] }): LoadedCatalogEntity {
+  const entityRef = catalogEntityRef(partial as LoadedCatalogEntity);
+  const slug = catalogEntitySlug(partial as LoadedCatalogEntity);
+  return {
+    ...partial,
+    entityRef,
+    slug,
+    location: partial.location ?? { file: '/tmp/catalog-info.yaml', document: 1 },
+  } as LoadedCatalogEntity;
+}
 
 describe('deriveCatalogRelationships', () => {
-  it('derives relationships using slug matching', () => {
-    const entities: content.CatalogEntity[] = [
-      baseTeam,
-      { ...baseSystem, team: 'platform' },
-      { ...baseComponent, system: 'dev-portal' },
-    ];
-
-    const relationships = content.deriveCatalogRelationships(entities);
-
-    expect(relationships.brokenReferences).toHaveLength(0);
-    expect(relationships.teamSystems['platform']).toEqual([
-      { slug: 'dev-portal', title: 'Developer Portal', kind: 'system' },
-    ]);
-    expect(relationships.systemComponents['dev-portal']).toEqual([
-      { slug: 'greenroom-web', title: 'Greenroom Web', kind: 'component' },
-    ]);
+  const domain = makeEntity({
+    apiVersion: 'backstage.io/v1beta1',
+    kind: 'Domain',
+    metadata: { name: 'devx' },
+    spec: { owner: 'platform' },
   });
 
-  it('falls back to title matching when reference values are display names', () => {
-    const entities: content.CatalogEntity[] = [
-      baseTeam,
-      { ...baseSystem, team: 'Platform Team' },
-      { ...baseComponent, system: 'Developer Portal' },
-    ];
+  const system = makeEntity({
+    apiVersion: 'backstage.io/v1beta1',
+    kind: 'System',
+    metadata: { name: 'dev-portal' },
+    spec: { owner: 'platform', domain: 'devx' },
+  });
 
-    const relationships = content.deriveCatalogRelationships(entities);
+  const component = makeEntity({
+    apiVersion: 'backstage.io/v1beta1',
+    kind: 'Component',
+    metadata: { name: 'greenroom-web' },
+    spec: { owner: 'platform', lifecycle: 'production', type: 'website', system: 'dev-portal' },
+  });
 
-    expect(relationships.brokenReferences).toHaveLength(0);
-    expect(relationships.teamSystems['platform']).toEqual([
-      { slug: 'dev-portal', title: 'Developer Portal', kind: 'system' },
+  it('derives relationships using normalized entity refs', () => {
+    const { relationships, byEntity } = deriveCatalogRelationships([domain, system, component]);
+
+    expect(relationships.domainSystems[formatEntityRef({ kind: 'Domain', name: 'devx', namespace: 'default' })]).toEqual([
+      {
+        entityRef: formatEntityRef({ kind: 'System', name: 'dev-portal', namespace: 'default' }),
+        slug: 'system/default/dev-portal',
+        kind: 'System',
+        name: 'dev-portal',
+        namespace: 'default',
+        title: 'dev-portal',
+      },
     ]);
-    expect(relationships.systemComponents['dev-portal']).toEqual([
-      { slug: 'greenroom-web', title: 'Greenroom Web', kind: 'component' },
+
+    expect(relationships.systemComponents[formatEntityRef({ kind: 'System', name: 'dev-portal', namespace: 'default' })]).toEqual([
+      {
+        entityRef: formatEntityRef({ kind: 'Component', name: 'greenroom-web', namespace: 'default' }),
+        slug: 'component/default/greenroom-web',
+        kind: 'Component',
+        name: 'greenroom-web',
+        namespace: 'default',
+        title: 'greenroom-web',
+      },
     ]);
+
+    expect(byEntity[system.entityRef].domain?.entityRef).toBe(domain.entityRef);
+    expect(byEntity[component.entityRef].system?.entityRef).toBe(system.entityRef);
   });
 
   it('records broken references when targets cannot be resolved', () => {
-    const entities: content.CatalogEntity[] = [
-      baseTeam,
-      { ...baseSystem, team: 'Missing Team' },
-      { ...baseComponent, system: 'Unknown System' },
-    ];
+    const orphanSystem = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'System',
+      metadata: { name: 'unknown-system' },
+      spec: { owner: 'platform', domain: 'missing-domain' },
+    });
 
-    const relationships = content.deriveCatalogRelationships(entities);
+    const orphanComponent = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Component',
+      metadata: { name: 'orphan' },
+      spec: { owner: 'platform', lifecycle: 'production', type: 'website', system: 'missing-system' },
+    });
 
-    expect(relationships.teamSystems['platform']).toBeUndefined();
-    expect(relationships.systemComponents['dev-portal']).toBeUndefined();
-    expect(relationships.brokenReferences).toEqual([
-      {
-        kind: 'system',
-        slug: 'dev-portal',
-        title: 'Developer Portal',
-        field: 'team',
-        target: 'Missing Team',
-      },
-      {
-        kind: 'component',
-        slug: 'greenroom-web',
-        title: 'Greenroom Web',
-        field: 'system',
-        target: 'Unknown System',
-      },
+    const { relationships } = deriveCatalogRelationships([orphanSystem, orphanComponent]);
+
+    expect(relationships.domainSystems[orphanSystem.entityRef]).toBeUndefined();
+    expect(relationships.systemComponents[orphanSystem.entityRef]).toBeUndefined();
+    expect(relationships.brokenReferences.map((ref) => ref.field)).toEqual([
+      'spec.domain',
+      'spec.system',
     ]);
   });
 });
 
 describe('getCatalogEntity', () => {
-  it('adds related systems for team entities', () => {
-    const entities: content.CatalogEntity[] = [
-      baseTeam,
-      { ...baseSystem, team: 'platform' },
-    ];
+  const domain = makeEntity({
+    apiVersion: 'backstage.io/v1beta1',
+    kind: 'Domain',
+    metadata: { name: 'devx' },
+    spec: { owner: 'platform' },
+  });
+  const system = makeEntity({
+    apiVersion: 'backstage.io/v1beta1',
+    kind: 'System',
+    metadata: { name: 'dev-portal' },
+    spec: { owner: 'platform', domain: 'devx' },
+  });
+  const component = makeEntity({
+    apiVersion: 'backstage.io/v1beta1',
+    kind: 'Component',
+    metadata: { name: 'greenroom-web' },
+    spec: { owner: 'platform', lifecycle: 'production', type: 'website', system: 'dev-portal' },
+  });
 
-    const entity = content.getCatalogEntity('platform', entities);
+  const entities = attachCatalogRelationships([domain, system, component]);
 
-    expect(entity?.systems).toEqual([
-      { slug: 'dev-portal', title: 'Developer Portal', kind: 'system' },
-    ]);
-    expect(entity?.components).toEqual([]);
+  it('adds related systems for domain entities', () => {
+    const entity = getCatalogEntity(domain.slug, entities);
+
+    expect(entity?.relations.systemsInDomain.map((ref) => ref.slug)).toEqual(['system/default/dev-portal']);
+    expect(entity?.relations.componentsInSystem).toEqual([]);
     expect(entity?.brokenReferences).toEqual([]);
   });
 
   it('adds related components for system entities', () => {
-    const entities: content.CatalogEntity[] = [
-      baseSystem,
-      { ...baseComponent, system: 'dev-portal' },
-    ];
+    const entity = getCatalogEntity(system.slug, entities);
 
-    const entity = content.getCatalogEntity('dev-portal', entities);
-
-    expect(entity?.components).toEqual([
-      { slug: 'greenroom-web', title: 'Greenroom Web', kind: 'component' },
-    ]);
-    expect(entity?.systems).toEqual([]);
+    expect(entity?.relations.componentsInSystem.map((ref) => ref.slug)).toEqual(['component/default/greenroom-web']);
+    expect(entity?.relations.systemsInDomain).toEqual([]);
     expect(entity?.brokenReferences).toEqual([]);
   });
 
   it('includes broken references scoped to the requested entity', () => {
-    const entities: content.CatalogEntity[] = [
-      { ...baseSystem, team: 'Unknown Team' },
-      { ...baseComponent, system: 'dev-portal' },
-      {
-        ...baseComponent,
-        slug: 'unbound-component',
-        title: 'Unbound Component',
-        system: 'Missing System',
-      },
-    ];
+    const orphan = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'System',
+      metadata: { name: 'orphan-system' },
+      spec: { owner: 'platform', domain: 'missing-domain' },
+      location: { file: '/tmp/orphan.yaml', document: 3 },
+    });
+    const orphanEntities = attachCatalogRelationships([orphan]);
 
-    const systemEntity = content.getCatalogEntity('dev-portal', entities);
-    const componentEntity = content.getCatalogEntity('unbound-component', entities);
+    const systemEntity = getCatalogEntity(orphan.slug, orphanEntities);
 
     expect(systemEntity?.brokenReferences).toEqual([
       {
-        kind: 'system',
-        slug: 'dev-portal',
-        title: 'Developer Portal',
-        field: 'team',
-        target: 'Unknown Team',
-      },
-    ]);
-    expect(componentEntity?.brokenReferences).toEqual([
-      {
-        kind: 'component',
-        slug: 'unbound-component',
-        title: 'Unbound Component',
-        field: 'system',
-        target: 'Missing System',
+        source: expect.objectContaining({ entityRef: orphan.entityRef }),
+        field: 'spec.domain',
+        target: 'Domain:default/missing-domain',
+        location: { file: '/tmp/orphan.yaml', document: 3 },
       },
     ]);
   });

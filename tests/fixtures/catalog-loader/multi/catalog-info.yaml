@@ -1,0 +1,21 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: platform-shell
+  namespace: platform
+  title: Platform Shell
+spec:
+  type: website
+  owner: platform-team
+  lifecycle: production
+---
+apiVersion: backstage.io/v1beta1
+kind: API
+metadata:
+  name: platform-shell-api
+  description: HTTP API for platform shell
+spec:
+  type: graphql
+  owner: platform-team
+  lifecycle: experimental

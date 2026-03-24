@@ -1,0 +1,92 @@
+---
+apiVersion: backstage.io/v1beta1
+kind: Domain
+metadata:
+  name: developer-experience
+  title: Developer Experience
+  description: Platform capabilities that improve developer productivity.
+  tags: [domain]
+spec:
+  owner: platform-team
+---
+apiVersion: backstage.io/v1beta1
+kind: System
+metadata:
+  name: dev-portal
+  title: Developer Portal
+  description: The Greenroom-powered developer portal experience.
+  tags: [portal, platform]
+spec:
+  owner: platform-team
+  domain: developer-experience
+---
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: greenroom-web
+  title: Greenroom Web
+  description: Next.js frontend that renders catalog entities and TechDocs-lite pages.
+  tags: [web, nextjs]
+spec:
+  type: website
+  owner: platform-team
+  lifecycle: production
+  system: dev-portal
+  providesApis:
+    - platform-shell-api
+  dependsOn:
+    - Resource:default/platform-db
+---
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: docs-service
+  namespace: platform
+  title: Docs Service
+  description: Internal service that builds and publishes catalog-driven docs.
+  tags: [web, docs]
+spec:
+  type: service
+  owner: platform-team
+  lifecycle: production
+  system: dev-portal
+  consumesApis:
+    - platform-shell-api
+  dependsOn:
+    - Resource:default/platform-db
+---
+apiVersion: backstage.io/v1beta1
+kind: API
+metadata:
+  name: platform-shell-api
+  title: Platform Shell API
+  description: API surface for platform shell integrations.
+  tags: [api, platform]
+spec:
+  type: openapi
+  owner: platform-team
+  lifecycle: production
+  system: dev-portal
+---
+apiVersion: backstage.io/v1beta1
+kind: Resource
+metadata:
+  name: platform-db
+  title: Platform Database
+  description: Primary PostgreSQL database backing platform services.
+  tags: [database, platform]
+spec:
+  type: postgres
+  owner: platform-team
+  lifecycle: production
+  system: dev-portal
+---
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: sample-catalog-source
+  title: Sample Catalog Source
+  description: Demonstrates Backstage catalog-info ingestion.
+spec:
+  type: url
+  target: https://example.com/catalog-info.yaml

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 
 import { CatalogFilterControls } from '../components/catalog-filter-controls';
-import { CatalogFacets } from '../lib/content';
+import type { CatalogFacets } from '../lib/content';
 
 function findByAriaLabel(node: React.ReactNode, label: string): React.ReactElement<any> | null {
   if (React.isValidElement(node)) {
@@ -22,9 +22,12 @@ function findByAriaLabel(node: React.ReactNode, label: string): React.ReactEleme
 
 describe('CatalogFilterControls', () => {
   const facets: CatalogFacets = {
-    owners: ['platform', 'product'],
-    teams: ['platform-team', 'growth'],
-    tags: ['frontend', 'backend', 'ops'],
+    owners: ['platform-team', 'beisel-it'],
+    tags: ['api', 'web', 'platform'],
+    kinds: ['Component', 'API', 'System', 'Resource', 'Domain', 'Location'],
+    namespaces: ['default', 'platform'],
+    systems: ['System:default/dev-portal', 'System:platform/data-plane'],
+    domains: ['Domain:default/platform'],
   };
 
   it('renders All options and facet-derived choices', () => {
@@ -33,52 +36,78 @@ describe('CatalogFilterControls', () => {
     );
 
     expect(markup).toContain('All owners');
-    expect(markup).toContain('All teams');
     expect(markup).toContain('All tags');
+    expect(markup).toContain('All kinds');
+    expect(markup).toContain('All namespaces');
+    expect(markup).toContain('All systems');
+    expect(markup).toContain('All domains');
 
-    expect(markup).toContain('platform');
-    expect(markup).toContain('product');
     expect(markup).toContain('platform-team');
-    expect(markup).toContain('growth');
-    expect(markup).toContain('frontend');
-    expect(markup).toContain('backend');
-    expect(markup).toContain('ops');
+    expect(markup).toContain('beisel-it');
+    expect(markup).toContain('api');
+    expect(markup).toContain('web');
+    expect(markup).toContain('platform');
+    expect(markup).toContain('Component');
+    expect(markup).toContain('API');
+    expect(markup).toContain('System:default/dev-portal');
+    expect(markup).toContain('Domain:default/platform');
   });
 
   it('emits filter changes and resets to undefined', () => {
     const onOwnerChange = vi.fn();
-    const onTeamChange = vi.fn();
     const onTagChange = vi.fn();
+    const onKindChange = vi.fn();
+    const onNamespaceChange = vi.fn();
+    const onSystemChange = vi.fn();
+    const onDomainChange = vi.fn();
 
     const element = CatalogFilterControls({
       facets,
-      filters: { owner: 'platform', team: undefined, tag: undefined },
+      filters: { owner: 'platform-team', tag: undefined, kind: 'Component', namespace: 'default', system: 'System:default/dev-portal', domain: 'Domain:default/platform' },
       onOwnerChange,
-      onTeamChange,
       onTagChange,
+      onKindChange,
+      onNamespaceChange,
+      onSystemChange,
+      onDomainChange,
     });
 
     const ownerSelect = findByAriaLabel(element, 'Owner filter');
-    const teamSelect = findByAriaLabel(element, 'Team filter');
     const tagSelect = findByAriaLabel(element, 'Tag filter');
+    const kindSelect = findByAriaLabel(element, 'Kind filter');
+    const namespaceSelect = findByAriaLabel(element, 'Namespace filter');
+    const systemSelect = findByAriaLabel(element, 'System filter');
+    const domainSelect = findByAriaLabel(element, 'Domain filter');
 
-    expect(ownerSelect?.props.value).toBe('platform');
-    ownerSelect?.props.onChange?.({ target: { value: 'product' } });
-    expect(onOwnerChange).toHaveBeenCalledWith('product');
-
+    expect(ownerSelect?.props.value).toBe('platform-team');
+    ownerSelect?.props.onChange?.({ target: { value: 'beisel-it' } });
+    expect(onOwnerChange).toHaveBeenCalledWith('beisel-it');
     ownerSelect?.props.onChange?.({ target: { value: '' } });
     expect(onOwnerChange).toHaveBeenLastCalledWith(undefined);
 
-    teamSelect?.props.onChange?.({ target: { value: 'growth' } });
-    expect(onTeamChange).toHaveBeenCalledWith('growth');
-
-    teamSelect?.props.onChange?.({ target: { value: '' } });
-    expect(onTeamChange).toHaveBeenLastCalledWith(undefined);
-
-    tagSelect?.props.onChange?.({ target: { value: 'ops' } });
-    expect(onTagChange).toHaveBeenCalledWith('ops');
-
+    tagSelect?.props.onChange?.({ target: { value: 'api' } });
+    expect(onTagChange).toHaveBeenCalledWith('api');
     tagSelect?.props.onChange?.({ target: { value: '' } });
     expect(onTagChange).toHaveBeenLastCalledWith(undefined);
+
+    kindSelect?.props.onChange?.({ target: { value: 'API' } });
+    expect(onKindChange).toHaveBeenCalledWith('API');
+    kindSelect?.props.onChange?.({ target: { value: '' } });
+    expect(onKindChange).toHaveBeenLastCalledWith(undefined);
+
+    namespaceSelect?.props.onChange?.({ target: { value: 'platform' } });
+    expect(onNamespaceChange).toHaveBeenCalledWith('platform');
+    namespaceSelect?.props.onChange?.({ target: { value: '' } });
+    expect(onNamespaceChange).toHaveBeenLastCalledWith(undefined);
+
+    systemSelect?.props.onChange?.({ target: { value: 'System:platform/data-plane' } });
+    expect(onSystemChange).toHaveBeenCalledWith('System:platform/data-plane');
+    systemSelect?.props.onChange?.({ target: { value: '' } });
+    expect(onSystemChange).toHaveBeenLastCalledWith(undefined);
+
+    domainSelect?.props.onChange?.({ target: { value: 'Domain:default/platform' } });
+    expect(onDomainChange).toHaveBeenCalledWith('Domain:default/platform');
+    domainSelect?.props.onChange?.({ target: { value: '' } });
+    expect(onDomainChange).toHaveBeenLastCalledWith(undefined);
   });
 });

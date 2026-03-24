@@ -1,8 +1,6 @@
-export const legacyCatalogKinds = ['org', 'team', 'system', 'component'] as const;
-export type LegacyCatalogKind = (typeof legacyCatalogKinds)[number];
-
 export const backstageCatalogKinds = ['Component', 'API', 'System', 'Resource', 'Domain', 'Location'] as const;
 export type CatalogKind = (typeof backstageCatalogKinds)[number];
+export const catalogKindOrder: readonly CatalogKind[] = ['Domain', 'System', 'Component', 'API', 'Resource', 'Location'];
 
 export type CatalogLifecycle = 'experimental' | 'production' | 'deprecated' | 'obsolete';
 export type ComponentType = 'service' | 'website' | 'library' | 'tool' | 'documentation' | 'other';
@@ -182,43 +180,6 @@ const BACKSTAGE_API_VERSIONS = new Set([
   'backstage.io/v1beta1',
   'backstage.io/v1',
 ]);
-
-export type CatalogEntity = {
-  slug: string;
-  kind: LegacyCatalogKind;
-  title: string;
-  summary: string;
-  owner?: string;
-  system?: string;
-  team?: string;
-  tags?: string[];
-  path: string;
-  body: string;
-};
-
-export type CatalogFacets = {
-  owners: string[];
-  teams: string[];
-  tags: string[];
-};
-
-export type CatalogGroupedEntities =
-  Partial<Record<CatalogKind, CatalogEntity[]>> &
-  Record<LegacyCatalogKind, CatalogEntity[]>;
-
-export type CatalogFilters = {
-  owner?: string;
-  team?: string;
-  tag?: string;
-  tags?: string[];
-};
-
-export const catalogKindOrder: readonly LegacyCatalogKind[] = legacyCatalogKinds;
-
-function normalizeTags(filters: CatalogFilters) {
-  const incoming = filters.tags ?? (filters.tag ? [filters.tag] : []);
-  return Array.from(new Set(incoming.filter(Boolean)));
-}
 
 function ensureObject(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -406,37 +367,4 @@ export function validateCatalogEntityEnvelope(input: unknown): CatalogEntityEnve
   const spec = validateSpec(kind, envelope.spec);
 
   return { apiVersion, kind, metadata, spec };
-}
-
-export function groupCatalogEntities(
-  entities: CatalogEntity[],
-  kindOrder: ReadonlyArray<LegacyCatalogKind> = catalogKindOrder,
-): CatalogGroupedEntities {
-  const initial = kindOrder.reduce((acc, kind) => {
-    acc[kind] = [];
-    return acc;
-  }, {} as Record<LegacyCatalogKind, CatalogEntity[]>);
-
-  return entities.reduce((acc, entity) => {
-    acc[entity.kind]?.push(entity);
-    return acc;
-  }, { ...initial });
-}
-
-export function filterCatalogEntities(
-  entities: CatalogEntity[],
-  filters: CatalogFilters = {},
-): CatalogEntity[] {
-  const requestedTags = normalizeTags(filters);
-
-  return entities.filter((entity) => {
-    const matchesOwner = filters.owner ? entity.owner === filters.owner : true;
-    const matchesTeam = filters.team ? entity.team === filters.team : true;
-
-    const entityTags = entity.tags ?? [];
-    const matchesTags =
-      requestedTags.length === 0 || requestedTags.every((tag) => entityTags.includes(tag));
-
-    return matchesOwner && matchesTeam && matchesTags;
-  });
 }

@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: greenroom-web
+  title: Greenroom Web
+  description: Lean Backstage-style portal
+spec:
+  type: website
+  owner: platform-team
+  lifecycle: production
+  system: dev-portal
