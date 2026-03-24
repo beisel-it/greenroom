@@ -5,14 +5,19 @@ import { CatalogEntityContent } from '@/components/catalog-entity-content';
 import type { CatalogEntityWithRelationships, EntityReference } from '@/lib/content';
 
 const baseRelations = {
+  owner: undefined,
   domain: undefined,
+  parentDomain: undefined,
   system: undefined,
+  parentComponent: undefined,
   providesApis: [],
   consumesApis: [],
   dependsOn: [],
   dependents: [],
   systemsInDomain: [],
+  subdomains: [],
   componentsInSystem: [],
+  subcomponents: [],
   apisInSystem: [],
   resourcesInSystem: [],
   providingComponents: [],

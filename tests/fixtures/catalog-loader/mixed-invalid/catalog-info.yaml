@@ -1,0 +1,24 @@
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: valid-shell
+spec:
+  type: website
+  owner: platform-team
+  lifecycle: production
+---
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  description: Missing name
+spec:
+  type: website
+  owner: platform-team
+  lifecycle: production
+---
+apiVersion: backstage.io/v1beta1
+kind: Template
+metadata:
+  name: unsupported-template
+spec:
+  owner: platform-team

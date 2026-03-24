@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   catalogKindOrder,
+  createCatalogRelationQuery,
   filterCatalogEntities,
   getCatalogContent,
   getCatalogEntities,
@@ -162,6 +163,28 @@ describe('catalog content helpers', () => {
 
     expect(resource?.relations.system?.entityRef).toBe('System:default/dev-portal');
     expect(entities.every((entity) => entity.brokenReferences.length === 0)).toBe(true);
+  });
+
+  it('exposes computed Backstage relations through a query helper', () => {
+    const query = createCatalogRelationQuery(entities);
+
+    expect(
+      query.getOutgoing('Component:default/greenroom-web', 'providesApi').map((edge) => edge.target.entityRef),
+    ).toEqual(['API:default/platform-shell-api']);
+    expect(
+      query.getOutgoing('Resource:default/platform-db', 'dependencyOf').map((edge) => edge.target.entityRef).sort(),
+    ).toEqual([
+      'Component:default/greenroom-web',
+      'Component:platform/docs-service',
+    ]);
+    expect(
+      query.getOutgoing('System:default/dev-portal', 'hasPart').map((edge) => edge.target.entityRef).sort(),
+    ).toEqual([
+      'API:default/platform-shell-api',
+      'Component:default/greenroom-web',
+      'Component:platform/docs-service',
+      'Resource:default/platform-db',
+    ]);
   });
 });
 

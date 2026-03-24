@@ -140,6 +140,70 @@ describe('deriveCatalogRelationships', () => {
     ]);
   });
 
+  it('derives owner refs and parent-child partOf relations without custom relationship fields', () => {
+    const domain = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Domain',
+      metadata: { name: 'platform', namespace: 'ops' },
+      spec: { owner: 'ops-team' },
+    });
+    const subdomain = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Domain',
+      metadata: { name: 'developer-experience', namespace: 'ops' },
+      spec: { owner: 'ops-team', subdomainOf: 'platform' },
+    });
+    const system = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'System',
+      metadata: { name: 'dev-portal', namespace: 'ops' },
+      spec: { owner: 'ops-team', domain: 'developer-experience' },
+    });
+    const component = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Component',
+      metadata: { name: 'frontend-shell', namespace: 'ops' },
+      spec: {
+        owner: 'ops-team',
+        lifecycle: 'production',
+        type: 'website',
+        system: 'dev-portal',
+      },
+    });
+    const childComponent = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Component',
+      metadata: { name: 'search-panel', namespace: 'ops' },
+      spec: {
+        owner: 'ops-team',
+        lifecycle: 'production',
+        type: 'website',
+        system: 'dev-portal',
+        subcomponentOf: 'frontend-shell',
+      },
+    });
+
+    const { relationships, byEntity } = deriveCatalogRelationships([
+      domain,
+      subdomain,
+      system,
+      component,
+      childComponent,
+    ]);
+
+    expect(byEntity[system.entityRef].owner?.entityRef).toBe('Group:ops/ops-team');
+    expect(byEntity[subdomain.entityRef].parentDomain?.entityRef).toBe('Domain:ops/platform');
+    expect(byEntity[childComponent.entityRef].parentComponent?.entityRef).toBe(
+      'Component:ops/frontend-shell',
+    );
+    expect(relationships.domainSubdomains[domain.entityRef].map((ref) => ref.entityRef)).toEqual([
+      'Domain:ops/developer-experience',
+    ]);
+    expect(
+      relationships.componentSubcomponents[component.entityRef].map((ref) => ref.entityRef),
+    ).toEqual(['Component:ops/search-panel']);
+  });
+
   it('derives reverse dependency relations from dependencyOf semantics', () => {
     const resource = makeEntity({
       apiVersion: 'backstage.io/v1beta1',
@@ -202,6 +266,36 @@ describe('getCatalogEntity', () => {
     expect(entity?.relations.systemsInDomain.map((ref) => ref.slug)).toEqual(['system/default/dev-portal']);
     expect(entity?.relations.componentsInSystem).toEqual([]);
     expect(entity?.brokenReferences).toEqual([]);
+  });
+
+  it('adds derived parent-child relations to attached entities', () => {
+    const parent = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Component',
+      metadata: { name: 'shell' },
+      spec: { owner: 'platform', lifecycle: 'production', type: 'website', system: 'dev-portal' },
+    });
+    const child = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Component',
+      metadata: { name: 'search-panel' },
+      spec: {
+        owner: 'platform',
+        lifecycle: 'production',
+        type: 'website',
+        system: 'dev-portal',
+        subcomponentOf: 'shell',
+      },
+    });
+    const attached = attachCatalogRelationships([system, parent, child]);
+
+    const parentEntity = getCatalogEntity(parent.slug, attached);
+    const childEntity = getCatalogEntity(child.slug, attached);
+
+    expect(parentEntity?.relations.subcomponents.map((ref) => ref.entityRef)).toEqual([
+      'Component:default/search-panel',
+    ]);
+    expect(childEntity?.relations.parentComponent?.entityRef).toBe('Component:default/shell');
   });
 
   it('adds related components for system entities', () => {

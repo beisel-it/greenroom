@@ -32,6 +32,7 @@ export type ComponentSpec = EntitySpecBase & {
   type: ComponentType | string;
   owner: string;
   lifecycle: CatalogLifecycle | string;
+  subcomponentOf?: string;
   providesApis?: string[];
   consumesApis?: string[];
   dependsOn?: string[];
@@ -56,8 +57,17 @@ export type ResourceSpec = EntitySpecBase & {
   dependencyOf?: string[];
 };
 
-export type DomainSpec = { owner: string };
-export type LocationSpec = { type: string; target: string };
+export type DomainSpec = {
+  owner: string;
+  subdomainOf?: string;
+};
+
+export type LocationSpec = {
+  type: string;
+  target?: string;
+  targets?: string[];
+  presence?: 'required' | 'optional';
+};
 
 export type AnyEntitySpec =
   | ComponentSpec
@@ -75,14 +85,14 @@ export type CatalogEntityEnvelope<TSpec extends AnyEntitySpec = AnyEntitySpec> =
 };
 
 export type EntityRef = {
-  kind: CatalogKind;
+  kind: string;
   namespace: string;
   name: string;
 };
 
 export type EntityRefInput = string | (Partial<EntityRef> & { name: string });
 export type EntityRefContext = {
-  defaultKind?: CatalogKind;
+  defaultKind?: string;
   defaultNamespace?: string;
 };
 
@@ -92,19 +102,25 @@ export const DEFAULT_ENTITY_KIND: CatalogKind = 'Component';
 const ENTITY_REF_PATTERN = /^(?:(?<kind>[^:\/]+):)?(?:(?<namespace>[^\/]+)\/)?(?<name>[^\/]+)$/i;
 const VALID_REF_SEGMENT = /^[a-z0-9_.-]+$/i;
 
-function normalizeKind(rawKind?: string): CatalogKind {
+function normalizeEntityRefKind(rawKind?: string): string {
   const value = (rawKind ?? DEFAULT_ENTITY_KIND).trim();
   if (!value) throw new Error('Entity kind is required');
-
-  const lower = value.toLowerCase();
-  const normalized = lower === 'api'
-    ? 'API'
-    : (lower.charAt(0).toUpperCase() + lower.slice(1)) as CatalogKind;
-
-  if (!backstageCatalogKinds.includes(normalized)) {
-    throw new Error(`Unsupported entity kind "${value}"`);
+  if (!VALID_REF_SEGMENT.test(value)) {
+    throw new Error(`Invalid kind segment "${value}"`);
   }
 
+  const lower = value.toLowerCase();
+  const normalized =
+    lower === 'api' ? 'API' : lower.charAt(0).toUpperCase() + lower.slice(1);
+
+  return normalized;
+}
+
+function normalizeKind(rawKind?: string): CatalogKind {
+  const normalized = normalizeEntityRefKind(rawKind) as CatalogKind;
+  if (!backstageCatalogKinds.includes(normalized)) {
+    throw new Error(`Unsupported entity kind "${rawKind ?? ''}"`);
+  }
   return normalized;
 }
 
@@ -135,7 +151,7 @@ export function parseEntityRef(input: EntityRefInput, context: EntityRefContext 
 
     const { kind, namespace, name } = match.groups;
     return {
-      kind: normalizeKind(kind ?? defaultKind),
+      kind: normalizeEntityRefKind(kind ?? defaultKind),
       namespace: normalizeSegment(namespace, 'namespace', defaultNamespace),
       name: normalizeSegment(name, 'name'),
     };
@@ -143,7 +159,7 @@ export function parseEntityRef(input: EntityRefInput, context: EntityRefContext 
 
   const { kind, namespace, name } = input;
   return {
-    kind: normalizeKind(kind ?? defaultKind),
+    kind: normalizeEntityRefKind(kind ?? defaultKind),
     namespace: normalizeSegment(namespace, 'namespace', defaultNamespace),
     name: normalizeSegment(name, 'name'),
   };
@@ -286,6 +302,7 @@ function validateComponentSpec(input: Record<string, unknown>): ComponentSpec {
   const type = ensureString(input.type ?? 'other', 'spec.type');
   const lifecycle = ensureString(input.lifecycle ?? '', 'spec.lifecycle');
   const owner = ensureString(input.owner ?? '', 'spec.owner');
+  const subcomponentOf = input.subcomponentOf ? ensureString(input.subcomponentOf, 'spec.subcomponentOf') : undefined;
 
   const stringList = (value: unknown, label: string) => {
     if (value === undefined) return undefined;
@@ -300,6 +317,7 @@ function validateComponentSpec(input: Record<string, unknown>): ComponentSpec {
     type: type as ComponentType,
     lifecycle: lifecycle as CatalogLifecycle,
     owner,
+    subcomponentOf,
     providesApis: stringList(input.providesApis, 'spec.providesApis'),
     consumesApis: stringList(input.consumesApis, 'spec.consumesApis'),
     dependsOn: stringList(input.dependsOn, 'spec.dependsOn'),
@@ -354,13 +372,31 @@ function validateResourceSpec(input: Record<string, unknown>): ResourceSpec {
 
 function validateDomainSpec(input: Record<string, unknown>): DomainSpec {
   const owner = ensureString(input.owner ?? '', 'spec.owner');
-  return { owner } satisfies DomainSpec;
+  const subdomainOf = input.subdomainOf ? ensureString(input.subdomainOf, 'spec.subdomainOf') : undefined;
+  return { owner, subdomainOf } satisfies DomainSpec;
 }
 
 function validateLocationSpec(input: Record<string, unknown>): LocationSpec {
   const type = ensureString(input.type, 'spec.type');
-  const target = ensureString(input.target, 'spec.target');
-  return { type, target } satisfies LocationSpec;
+  const target = input.target ? ensureString(input.target, 'spec.target') : undefined;
+  const targets = input.targets === undefined
+    ? undefined
+    : Array.isArray(input.targets) && input.targets.every((item) => typeof item === 'string')
+      ? input.targets.map((item) => ensureString(item, 'spec.targets'))
+      : (() => {
+          throw new Error('spec.targets must be an array of strings');
+        })();
+  const presence = input.presence === undefined ? undefined : ensureString(input.presence, 'spec.presence');
+
+  if (!target && (!targets || targets.length === 0)) {
+    throw new Error('spec.target or spec.targets is required');
+  }
+
+  if (presence && presence !== 'required' && presence !== 'optional') {
+    throw new Error('spec.presence must be "required" or "optional"');
+  }
+
+  return { type, target, targets, presence: presence as LocationSpec['presence'] } satisfies LocationSpec;
 }
 
 function validateSpec(kind: CatalogKind, input: unknown): AnyEntitySpec {

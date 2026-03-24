@@ -1,6 +1,7 @@
 import {
   CatalogKind,
   catalogKindOrder,
+  DomainSpec,
   DEFAULT_ENTITY_NAMESPACE,
   formatEntityRef,
   parseEntityRef,
@@ -11,7 +12,7 @@ import type { LoadedCatalogEntity } from './catalog-loader';
 export type EntityReference = {
   entityRef: string;
   slug: string;
-  kind: CatalogKind;
+  kind: string;
   name: string;
   namespace: string;
   title: string;
@@ -26,9 +27,11 @@ export type BrokenReference = {
 
 export type DerivedRelationshipMaps = {
   domainSystems: Record<string, EntityReference[]>;
+  domainSubdomains: Record<string, EntityReference[]>;
   systemComponents: Record<string, EntityReference[]>;
   systemApis: Record<string, EntityReference[]>;
   systemResources: Record<string, EntityReference[]>;
+  componentSubcomponents: Record<string, EntityReference[]>;
   apiProviders: Record<string, EntityReference[]>;
   apiConsumers: Record<string, EntityReference[]>;
   dependents: Record<string, EntityReference[]>;
@@ -36,14 +39,19 @@ export type DerivedRelationshipMaps = {
 };
 
 export type EntityRelationships = {
+  owner?: EntityReference;
   domain?: EntityReference;
+  parentDomain?: EntityReference;
   system?: EntityReference;
+  parentComponent?: EntityReference;
   providesApis: EntityReference[];
   consumesApis: EntityReference[];
   dependsOn: EntityReference[];
   dependents: EntityReference[];
   systemsInDomain: EntityReference[];
+  subdomains: EntityReference[];
   componentsInSystem: EntityReference[];
+  subcomponents: EntityReference[];
   apisInSystem: EntityReference[];
   resourcesInSystem: EntityReference[];
   providingComponents: EntityReference[];
@@ -77,6 +85,30 @@ export type CatalogFilters = {
   system?: string;
 };
 
+export type CatalogRelationType =
+  | 'ownedBy'
+  | 'ownerOf'
+  | 'partOf'
+  | 'hasPart'
+  | 'providesApi'
+  | 'apiProvidedBy'
+  | 'consumesApi'
+  | 'apiConsumedBy'
+  | 'dependsOn'
+  | 'dependencyOf';
+
+export type CatalogRelation = {
+  type: CatalogRelationType;
+  source: EntityReference;
+  target: EntityReference;
+};
+
+export type CatalogRelationQuery = {
+  edges: CatalogRelation[];
+  getOutgoing: (entityRef: string, type?: CatalogRelationType) => CatalogRelation[];
+  getIncoming: (entityRef: string, type?: CatalogRelationType) => CatalogRelation[];
+};
+
 function toReference(entity: LoadedCatalogEntity): EntityReference {
   return {
     entityRef: entity.entityRef,
@@ -95,6 +127,22 @@ function normalizeTarget(source: LoadedCatalogEntity, raw: string, fallbackKind?
   });
 }
 
+function formatOwnerReference(source: LoadedCatalogEntity, raw: string): EntityReference {
+  const ref = parseEntityRef(raw, {
+    defaultKind: 'Group',
+    defaultNamespace: source.metadata.namespace ?? DEFAULT_ENTITY_NAMESPACE,
+  });
+
+  return {
+    entityRef: formatEntityRef(ref),
+    slug: `${ref.kind.toLowerCase()}/${ref.namespace}/${ref.name}`,
+    kind: ref.kind,
+    name: ref.name,
+    namespace: ref.namespace,
+    title: ref.name,
+  };
+}
+
 function addRelationship(map: Record<string, EntityReference[]>, key: string, ref: EntityReference) {
   const entries = map[key] ?? [];
   if (!entries.some((entry) => entry.entityRef === ref.entityRef)) {
@@ -109,6 +157,12 @@ function addReference(list: EntityReference[], ref: EntityReference) {
   }
 }
 
+function hasAttachedRelationships(
+  entity: LoadedCatalogEntity | CatalogEntityWithRelationships,
+): entity is CatalogEntityWithRelationships {
+  return 'relations' in entity && 'brokenReferences' in entity;
+}
+
 function emptyRelations(): EntityRelationships {
   return {
     providesApis: [],
@@ -116,7 +170,9 @@ function emptyRelations(): EntityRelationships {
     dependsOn: [],
     dependents: [],
     systemsInDomain: [],
+    subdomains: [],
     componentsInSystem: [],
+    subcomponents: [],
     apisInSystem: [],
     resourcesInSystem: [],
     providingComponents: [],
@@ -124,6 +180,12 @@ function emptyRelations(): EntityRelationships {
   };
 }
 
+/**
+ * Relations are derived from Backstage envelope semantics instead of persisted
+ * as custom relationship fields. Owner comes from `spec.owner`, part-of from
+ * `spec.domain`, `spec.system`, `spec.subdomainOf`, and `spec.subcomponentOf`,
+ * and API/dependency links come from the corresponding Component/Resource refs.
+ */
 export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
   relationships: DerivedRelationshipMaps;
   byEntity: Record<string, EntityRelationships>;
@@ -138,9 +200,11 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
 
   const relationships: DerivedRelationshipMaps = {
     domainSystems: {},
+    domainSubdomains: {},
     systemComponents: {},
     systemApis: {},
     systemResources: {},
+    componentSubcomponents: {},
     apiProviders: {},
     apiConsumers: {},
     dependents: {},
@@ -159,6 +223,15 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
   entities.forEach((entity) => {
     const sourceRef = toReference(entity);
     const setForward = byEntity[entity.entityRef];
+    const ownerValue = (entity.spec as { owner?: string }).owner;
+
+    if (ownerValue) {
+      try {
+        setForward.owner = formatOwnerReference(entity, ownerValue);
+      } catch (error) {
+        recordBroken(entity, 'spec.owner', ownerValue);
+      }
+    }
 
     const domainRefValue = (entity.spec as { domain?: string }).domain;
     if (domainRefValue) {
@@ -175,6 +248,26 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
         }
       } catch (error) {
         recordBroken(entity, 'spec.domain', domainRefValue);
+      }
+    }
+
+    if (entity.kind === 'Domain') {
+      const subdomainOf = (entity.spec as DomainSpec).subdomainOf;
+      if (subdomainOf) {
+        try {
+          const targetRef = normalizeTarget(entity, subdomainOf, 'Domain');
+          const key = formatEntityRef(targetRef);
+          const target = lookup.get(key);
+          if (target && target.kind === 'Domain') {
+            const ref = toReference(target);
+            setForward.parentDomain = ref;
+            addRelationship(relationships.domainSubdomains, target.entityRef, sourceRef);
+          } else {
+            recordBroken(entity, 'spec.subdomainOf', key);
+          }
+        } catch (error) {
+          recordBroken(entity, 'spec.subdomainOf', subdomainOf);
+        }
       }
     }
 
@@ -210,7 +303,25 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
         consumesApis = [],
         dependsOn = [],
         dependencyOf = [],
+        subcomponentOf,
       } = entity.spec as ComponentSpec;
+
+      if (subcomponentOf) {
+        try {
+          const targetRef = normalizeTarget(entity, subcomponentOf, 'Component');
+          const key = formatEntityRef(targetRef);
+          const target = lookup.get(key);
+          if (target && target.kind === 'Component') {
+            const ref = toReference(target);
+            setForward.parentComponent = ref;
+            addRelationship(relationships.componentSubcomponents, target.entityRef, sourceRef);
+          } else {
+            recordBroken(entity, 'spec.subcomponentOf', key);
+          }
+        } catch (error) {
+          recordBroken(entity, 'spec.subcomponentOf', subcomponentOf);
+        }
+      }
 
       providesApis.forEach((raw, index) => {
         try {
@@ -327,7 +438,9 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
     byEntity[entityRef] = {
       ...forward,
       systemsInDomain: relationships.domainSystems[entityRef] ?? [],
+      subdomains: relationships.domainSubdomains[entityRef] ?? [],
       componentsInSystem: relationships.systemComponents[entityRef] ?? [],
+      subcomponents: relationships.componentSubcomponents[entityRef] ?? [],
       apisInSystem: relationships.systemApis[entityRef] ?? [],
       resourcesInSystem: relationships.systemResources[entityRef] ?? [],
       providingComponents: relationships.apiProviders[entityRef] ?? [],
@@ -356,6 +469,80 @@ export function attachCatalogRelationships(entities: LoadedCatalogEntity[]): Cat
     byEntity[entity.entityRef] ?? emptyRelations(),
     relationships.brokenReferences.filter((ref) => ref.source.entityRef === entity.entityRef),
   ));
+}
+
+export function createCatalogRelationQuery(
+  entities: Array<LoadedCatalogEntity | CatalogEntityWithRelationships>,
+): CatalogRelationQuery {
+  const attached = entities.every((entity) => hasAttachedRelationships(entity))
+    ? (entities as CatalogEntityWithRelationships[])
+    : attachCatalogRelationships(entities as LoadedCatalogEntity[]);
+  const referenceByEntityRef = new Map(attached.map((entity) => [entity.entityRef, toReference(entity)]));
+  const edges: CatalogRelation[] = [];
+  const edgeKeys = new Set<string>();
+
+  function addEdge(type: CatalogRelationType, source: EntityReference, target: EntityReference) {
+    const key = `${type}:${source.entityRef}->${target.entityRef}`;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push({ type, source, target });
+  }
+
+  attached.forEach((entity) => {
+    const source = referenceByEntityRef.get(entity.entityRef);
+    if (!source) return;
+
+    if (entity.relations.owner) {
+      addEdge('ownedBy', source, entity.relations.owner);
+      addEdge('ownerOf', entity.relations.owner, source);
+    }
+
+    const partOfTargets = [
+      entity.relations.domain,
+      entity.relations.parentDomain,
+      entity.relations.system,
+      entity.relations.parentComponent,
+    ].filter((target): target is EntityReference => Boolean(target));
+    partOfTargets.forEach((target) => {
+      addEdge('partOf', source, target);
+      addEdge('hasPart', target, source);
+    });
+
+    entity.relations.providesApis.forEach((target) => {
+      addEdge('providesApi', source, target);
+      addEdge('apiProvidedBy', target, source);
+    });
+
+    entity.relations.consumesApis.forEach((target) => {
+      addEdge('consumesApi', source, target);
+      addEdge('apiConsumedBy', target, source);
+    });
+
+    entity.relations.dependsOn.forEach((target) => {
+      addEdge('dependsOn', source, target);
+      addEdge('dependencyOf', target, source);
+    });
+  });
+
+  edges.sort((left, right) => {
+    const sourceOrder = left.source.entityRef.localeCompare(right.source.entityRef);
+    if (sourceOrder !== 0) return sourceOrder;
+    const typeOrder = left.type.localeCompare(right.type);
+    if (typeOrder !== 0) return typeOrder;
+    return left.target.entityRef.localeCompare(right.target.entityRef);
+  });
+
+  const filterEdges = (
+    direction: 'source' | 'target',
+    entityRef: string,
+    type?: CatalogRelationType,
+  ) => edges.filter((edge) => edge[direction].entityRef === entityRef && (type ? edge.type === type : true));
+
+  return {
+    edges,
+    getOutgoing: (entityRef, type) => filterEdges('source', entityRef, type),
+    getIncoming: (entityRef, type) => filterEdges('target', entityRef, type),
+  };
 }
 
 export function getCatalogFacets(entities: CatalogEntityWithRelationships[]): CatalogFacets {

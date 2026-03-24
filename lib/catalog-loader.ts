@@ -23,6 +23,57 @@ type LoadOptions = {
   catalogDir?: string;
 };
 
+export type CatalogLoadErrorCode = 'yaml_parse' | 'yaml_empty' | 'validation';
+
+export type CatalogLoadErrorDetails = {
+  code: CatalogLoadErrorCode;
+  file: string;
+  document: number;
+  field?: string;
+  message: string;
+};
+
+const FIELD_PATTERN = /^(apiVersion|kind|metadata(?:\.[a-zA-Z0-9_[\].-]+)?|spec(?:\.[a-zA-Z0-9_[\].-]+)?)/;
+
+function extractField(message: string) {
+  const match = FIELD_PATTERN.exec(message.trim());
+  return match?.[1];
+}
+
+export class CatalogLoadError extends Error {
+  readonly code: CatalogLoadErrorCode;
+  readonly file: string;
+  readonly document: number;
+  readonly field?: string;
+
+  constructor(details: CatalogLoadErrorDetails) {
+    const relativeFile = path.relative(process.cwd(), details.file) || details.file;
+    const fieldSuffix = details.field ? ` [field: ${details.field}]` : '';
+    super(`${relativeFile} (document ${details.document})${fieldSuffix}: ${details.message}`);
+    this.name = 'CatalogLoadError';
+    this.code = details.code;
+    this.file = details.file;
+    this.document = details.document;
+    this.field = details.field;
+  }
+}
+
+export class CatalogAggregateLoadError extends Error {
+  readonly errors: CatalogLoadError[];
+
+  constructor(errors: CatalogLoadError[]) {
+    const sortedErrors = [...errors].sort((left, right) => {
+      if (left.file === right.file) {
+        return left.document - right.document;
+      }
+      return left.file.localeCompare(right.file);
+    });
+    super(sortedErrors.map((error) => error.message).join('\n'));
+    this.name = 'CatalogAggregateLoadError';
+    this.errors = sortedErrors;
+  }
+}
+
 function deriveSlug(envelope: CatalogEntityEnvelope) {
   const ref = parseEntityRef({
     kind: envelope.kind,
@@ -36,28 +87,56 @@ function deriveSlug(envelope: CatalogEntityEnvelope) {
   return { ref, entityRef, slug };
 }
 
-function withContext(filePath: string, documentIndex: number, error: unknown): Error {
-  const prefix = `${path.relative(process.cwd(), filePath) || filePath} (document ${documentIndex})`;
+function toCatalogLoadError(filePath: string, documentIndex: number, error: unknown): CatalogLoadError {
+  if (error instanceof CatalogLoadError) {
+    return error;
+  }
+
+  if (error instanceof YAMLParseError) {
+    return new CatalogLoadError({
+      code: 'yaml_parse',
+      file: filePath,
+      document: documentIndex,
+      message: error.message,
+    });
+  }
+
   const message = error instanceof Error ? error.message : String(error);
-  return new Error(`${prefix}: ${message}`);
+  return new CatalogLoadError({
+    code: message.includes('empty') ? 'yaml_empty' : 'validation',
+    file: filePath,
+    document: documentIndex,
+    field: extractField(message),
+    message,
+  });
 }
 
 function loadDocument(doc: ReturnType<typeof parseAllDocuments>[number], filePath: string, index: number): LoadedCatalogEntity {
   if (!doc) {
-    throw new Error('YAML document is empty');
+    throw new CatalogLoadError({
+      code: 'yaml_empty',
+      file: filePath,
+      document: index,
+      message: 'YAML document is empty',
+    });
   }
 
   if (doc.errors.length) {
     // Prefer the first parse error for context
     const parseError = doc.errors[0];
     if (parseError instanceof YAMLParseError) {
-      throw parseError;
+      throw toCatalogLoadError(filePath, index, parseError);
     }
-    throw new Error(parseError.message);
+    throw toCatalogLoadError(filePath, index, parseError);
   }
 
   if (!doc.contents) {
-    throw new Error('YAML document is empty');
+    throw new CatalogLoadError({
+      code: 'yaml_empty',
+      file: filePath,
+      document: index,
+      message: 'YAML document is empty',
+    });
   }
 
   const envelope = validateCatalogEntityEnvelope(doc.toJS({ mapAsMap: false }));
@@ -89,23 +168,37 @@ function findCatalogInfoFiles(dir: string): string[] {
 export function loadCatalogEntitiesFromYaml(options: LoadOptions = {}): LoadedCatalogEntity[] {
   const catalogDir = options.catalogDir ?? path.join(process.cwd(), 'content', 'catalog');
   const files = findCatalogInfoFiles(catalogDir);
+  const errors: CatalogLoadError[] = [];
 
   const entities = files.flatMap((filePath) => {
     const raw = fs.readFileSync(filePath, 'utf8');
     const documents = parseAllDocuments(raw);
 
     if (documents.length === 0) {
-      throw withContext(filePath, 1, new Error('No YAML documents found'));
+      errors.push(
+        new CatalogLoadError({
+          code: 'yaml_empty',
+          file: filePath,
+          document: 1,
+          message: 'No YAML documents found',
+        }),
+      );
+      return [];
     }
 
-    return documents.map((doc, idx) => {
+    return documents.flatMap((doc, idx) => {
       try {
-        return loadDocument(doc, filePath, idx + 1);
+        return [loadDocument(doc, filePath, idx + 1)];
       } catch (error) {
-        throw withContext(filePath, idx + 1, error);
+        errors.push(toCatalogLoadError(filePath, idx + 1, error));
+        return [];
       }
     });
   });
+
+  if (errors.length) {
+    throw new CatalogAggregateLoadError(errors);
+  }
 
   return entities.sort((a, b) => a.slug.localeCompare(b.slug));
 }

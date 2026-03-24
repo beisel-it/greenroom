@@ -1,7 +1,10 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { loadCatalogEntitiesFromYaml } from '../lib/catalog-loader';
+import {
+  CatalogAggregateLoadError,
+  loadCatalogEntitiesFromYaml,
+} from '../lib/catalog-loader';
 
 const fixturesRoot = path.join(process.cwd(), 'tests', 'fixtures', 'catalog-loader');
 
@@ -43,5 +46,27 @@ describe('catalog-info loader', () => {
     expect(() =>
       loadCatalogEntitiesFromYaml({ catalogDir: path.join(fixturesRoot, 'unsupported') }),
     ).toThrow(/unsupported\/catalog-info\.yaml \(document 1\): Unsupported entity kind/);
+  });
+
+  it('surfaces deterministic structured validation errors with offending fields', () => {
+    try {
+      loadCatalogEntitiesFromYaml({ catalogDir: path.join(fixturesRoot, 'mixed-invalid') });
+      throw new Error('expected catalog load to fail');
+    } catch (error) {
+      expect(error).toBeInstanceOf(CatalogAggregateLoadError);
+      const loadError = error as CatalogAggregateLoadError;
+
+      expect(loadError.errors).toHaveLength(2);
+      expect(loadError.errors.map((entry) => ({
+        code: entry.code,
+        document: entry.document,
+        field: entry.field,
+      }))).toEqual([
+        { code: 'validation', document: 2, field: 'metadata.name' },
+        { code: 'validation', document: 3, field: undefined },
+      ]);
+      expect(loadError.message).toContain('mixed-invalid/catalog-info.yaml (document 2) [field: metadata.name]');
+      expect(loadError.message).toContain('mixed-invalid/catalog-info.yaml (document 3): Unsupported entity kind');
+    }
   });
 });

@@ -78,6 +78,46 @@ describe('validateCatalogEntityEnvelope', () => {
 
     expect(() => validateCatalogEntityEnvelope(missingOwner)).toThrow(/spec.owner is required/);
   });
+
+  it('supports MVP kind-specific spec fields for Domain, Component, and Location', () => {
+    const domain = validateCatalogEntityEnvelope({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Domain',
+      metadata: { name: 'payments' },
+      spec: { owner: 'platform', subdomainOf: 'commerce' },
+    });
+
+    const component = validateCatalogEntityEnvelope({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Component',
+      metadata: { name: 'checkout-ui' },
+      spec: {
+        type: 'website',
+        lifecycle: 'production',
+        owner: 'platform',
+        subcomponentOf: 'checkout-shell',
+      },
+    });
+
+    const location = validateCatalogEntityEnvelope({
+      apiVersion: 'backstage.io/v1alpha1',
+      kind: 'Location',
+      metadata: { name: 'catalog-source' },
+      spec: {
+        type: 'url',
+        targets: ['https://example.com/catalog-info.yaml'],
+        presence: 'optional',
+      },
+    });
+
+    expect(domain.spec).toMatchObject({ owner: 'platform', subdomainOf: 'commerce' });
+    expect(component.spec).toMatchObject({ subcomponentOf: 'checkout-shell' });
+    expect(location.spec).toMatchObject({
+      type: 'url',
+      targets: ['https://example.com/catalog-info.yaml'],
+      presence: 'optional',
+    });
+  });
 });
 
 describe('entity ref parsing', () => {
