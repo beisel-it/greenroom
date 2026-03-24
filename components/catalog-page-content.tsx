@@ -11,10 +11,10 @@ import {
   groupCatalogEntities,
 } from '@/lib/catalog-core';
 
-type FiltersState = Pick<CatalogFilters, 'owner' | 'tag' | 'kind' | 'namespace' | 'system' | 'domain'>;
+type FiltersState = Pick<CatalogFilters, 'owner' | 'tag' | 'kind' | 'namespace' | 'system'>;
 
-export function deriveGroupedCatalog(entities: CatalogEntityWithRelationships[], filters: Partial<FiltersState>) {
-  const filtered = filterCatalogEntities(entities, filters as CatalogFilters);
+export function deriveGroupedCatalog(entities: CatalogEntityWithRelationships[], filters: FiltersState) {
+  const filtered = filterCatalogEntities(entities, filters);
   return groupCatalogEntities(filtered);
 }
 
@@ -38,7 +38,6 @@ export function CatalogPageContent({ entities, facets }: CatalogPageContentProps
         onKindChange={(kind) => setFilters((prev) => ({ ...prev, kind: kind as CatalogFilters['kind'] }))}
         onNamespaceChange={(namespace) => setFilters((prev) => ({ ...prev, namespace }))}
         onSystemChange={(system) => setFilters((prev) => ({ ...prev, system }))}
-        onDomainChange={(domain) => setFilters((prev) => ({ ...prev, domain }))}
       />
       <CatalogGroups grouped={grouped} />
     </>

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 
 import { CatalogFilterControls } from '../components/catalog-filter-controls';
-import type { CatalogFacets } from '../lib/content';
+import type { CatalogFacets } from '../lib/catalog-core';
 
 function findByAriaLabel(node: React.ReactNode, label: string): React.ReactElement<any> | null {
   if (React.isValidElement(node)) {
@@ -26,8 +26,8 @@ describe('CatalogFilterControls', () => {
     tags: ['api', 'web', 'platform'],
     kinds: ['Component', 'API', 'System', 'Resource', 'Domain', 'Location'],
     namespaces: ['default', 'platform'],
-    systems: ['System:default/dev-portal', 'System:platform/data-plane'],
-    domains: ['Domain:default/platform'],
+    systems: ['dev-portal', 'data-plane'],
+    domains: ['Domain:default/developer-experience'],
   };
 
   it('renders All options and facet-derived choices', () => {
@@ -40,7 +40,6 @@ describe('CatalogFilterControls', () => {
     expect(markup).toContain('All kinds');
     expect(markup).toContain('All namespaces');
     expect(markup).toContain('All systems');
-    expect(markup).toContain('All domains');
 
     expect(markup).toContain('platform-team');
     expect(markup).toContain('beisel-it');
@@ -49,8 +48,7 @@ describe('CatalogFilterControls', () => {
     expect(markup).toContain('platform');
     expect(markup).toContain('Component');
     expect(markup).toContain('API');
-    expect(markup).toContain('System:default/dev-portal');
-    expect(markup).toContain('Domain:default/platform');
+    expect(markup).toContain('dev-portal');
   });
 
   it('emits filter changes and resets to undefined', () => {
@@ -59,17 +57,15 @@ describe('CatalogFilterControls', () => {
     const onKindChange = vi.fn();
     const onNamespaceChange = vi.fn();
     const onSystemChange = vi.fn();
-    const onDomainChange = vi.fn();
 
     const element = CatalogFilterControls({
       facets,
-      filters: { owner: 'platform-team', tag: undefined, kind: 'Component', namespace: 'default', system: 'System:default/dev-portal', domain: 'Domain:default/platform' },
+      filters: { owner: 'platform-team', tag: undefined, kind: 'Component', namespace: 'default', system: 'dev-portal' },
       onOwnerChange,
       onTagChange,
       onKindChange,
       onNamespaceChange,
       onSystemChange,
-      onDomainChange,
     });
 
     const ownerSelect = findByAriaLabel(element, 'Owner filter');
@@ -77,7 +73,6 @@ describe('CatalogFilterControls', () => {
     const kindSelect = findByAriaLabel(element, 'Kind filter');
     const namespaceSelect = findByAriaLabel(element, 'Namespace filter');
     const systemSelect = findByAriaLabel(element, 'System filter');
-    const domainSelect = findByAriaLabel(element, 'Domain filter');
 
     expect(ownerSelect?.props.value).toBe('platform-team');
     ownerSelect?.props.onChange?.({ target: { value: 'beisel-it' } });
@@ -100,14 +95,9 @@ describe('CatalogFilterControls', () => {
     namespaceSelect?.props.onChange?.({ target: { value: '' } });
     expect(onNamespaceChange).toHaveBeenLastCalledWith(undefined);
 
-    systemSelect?.props.onChange?.({ target: { value: 'System:platform/data-plane' } });
-    expect(onSystemChange).toHaveBeenCalledWith('System:platform/data-plane');
+    systemSelect?.props.onChange?.({ target: { value: 'data-plane' } });
+    expect(onSystemChange).toHaveBeenCalledWith('data-plane');
     systemSelect?.props.onChange?.({ target: { value: '' } });
     expect(onSystemChange).toHaveBeenLastCalledWith(undefined);
-
-    domainSelect?.props.onChange?.({ target: { value: 'Domain:default/platform' } });
-    expect(onDomainChange).toHaveBeenCalledWith('Domain:default/platform');
-    domainSelect?.props.onChange?.({ target: { value: '' } });
-    expect(onDomainChange).toHaveBeenLastCalledWith(undefined);
   });
 });

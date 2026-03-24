@@ -21,7 +21,6 @@ describe('catalog content helpers', () => {
     expect(empty.kinds).toEqual(catalogKindOrder.slice());
     expect(empty.namespaces).toEqual([]);
     expect(empty.systems).toEqual([]);
-    expect(empty.domains).toEqual([]);
   });
 
   it('collects unique owners, tags, and kinds', () => {
@@ -38,7 +37,6 @@ describe('catalog content helpers', () => {
     expect(facets.kinds).toEqual(catalogKindOrder);
     expect(facets.namespaces).toEqual(['default', 'platform']);
     expect(facets.systems).toContain('System:default/dev-portal');
-    expect(facets.domains).toContain('Domain:default/developer-experience');
   });
 
   it('groups entities by kind with stable ordering and empty lists', () => {
@@ -126,7 +124,6 @@ describe('catalog content helpers', () => {
     expect(catalog.facets.owners).toEqual(['platform-team']);
     expect(catalog.facets.tags).toContain('portal');
     expect(catalog.facets.systems).toContain('System:default/dev-portal');
-    expect(catalog.facets.domains).toContain('Domain:default/developer-experience');
   });
 
   it('loads catalog entities from catalog-info.yaml fixtures', () => {

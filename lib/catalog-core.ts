@@ -76,7 +76,6 @@ export type CatalogFilters = {
   kind?: CatalogKind;
   namespace?: string;
   system?: string;
-  domain?: string;
 };
 
 function toReference(entity: LoadedCatalogEntity): EntityReference {
@@ -91,11 +90,11 @@ function toReference(entity: LoadedCatalogEntity): EntityReference {
 }
 
 function normalizeTarget(raw: string, fallbackKind?: CatalogKind) {
-  const hasKind = raw.includes(':');
-  if (hasKind) return parseEntityRef(raw);
-  // namespace/name format without kind — prepend the fallback kind
-  if (fallbackKind) return parseEntityRef(`${fallbackKind}:${raw}`);
-  return parseEntityRef(raw);
+  const value = raw.trim();
+  const hasKind = value.includes(':');
+  if (hasKind) return parseEntityRef(value);
+  if (!fallbackKind) return parseEntityRef(value);
+  return parseEntityRef(`${fallbackKind}:${value}`);
 }
 
 function addRelationship(map: Record<string, EntityReference[]>, key: string, ref: EntityReference) {
@@ -119,20 +118,6 @@ function emptyRelations(): EntityRelationships {
     providingComponents: [],
     consumingComponents: [],
   };
-}
-
-function canonicalEntityRef(kind: CatalogKind, name: string, namespace?: string) {
-  return formatEntityRef({ kind, name, namespace: namespace ?? DEFAULT_ENTITY_NAMESPACE });
-}
-
-function normalizeFilterRef(value: string | undefined, fallbackKind: CatalogKind) {
-  if (!value) return undefined;
-  try {
-    const ref = parseEntityRef(value.includes(':') ? value : `${fallbackKind}:${value}`);
-    return formatEntityRef(ref);
-  } catch {
-    return undefined;
-  }
 }
 
 export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
@@ -185,7 +170,7 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
           recordBroken(entity, 'spec.domain', key);
         }
       } catch (error) {
-        recordBroken(entity, 'spec.domain', String(error instanceof Error ? error.message : error));
+        recordBroken(entity, 'spec.domain', domainRefValue);
       }
     }
 
@@ -211,7 +196,7 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
           recordBroken(entity, 'spec.system', key);
         }
       } catch (error) {
-        recordBroken(entity, 'spec.system', String(error instanceof Error ? error.message : error));
+        recordBroken(entity, 'spec.system', systemRefValue);
       }
     }
 
@@ -231,7 +216,7 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
             recordBroken(entity, `spec.providesApis[${index}]`, key);
           }
         } catch (error) {
-          recordBroken(entity, `spec.providesApis[${index}]`, String(error instanceof Error ? error.message : error));
+          recordBroken(entity, `spec.providesApis[${index}]`, raw);
         }
       });
 
@@ -248,37 +233,16 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
             recordBroken(entity, `spec.consumesApis[${index}]`, key);
           }
         } catch (error) {
-          recordBroken(entity, `spec.consumesApis[${index}]`, String(error instanceof Error ? error.message : error));
+          recordBroken(entity, `spec.consumesApis[${index}]`, raw);
         }
       });
 
       dependsOn.forEach((raw, index) => {
         try {
-          // For dependsOn, try all known kinds when no explicit kind given
           const hasKind = raw.includes(':');
-          let target = null;
-          let key = '';
-          if (hasKind) {
-            const targetRef = parseEntityRef(raw);
-            key = formatEntityRef(targetRef);
-            target = lookup.get(key) ?? null;
-          } else {
-            // Try each kind in order
-            const kinds = ['Component', 'Resource', 'API', 'System', 'Domain', 'Location'] as const;
-            for (const k of kinds) {
-              const targetRef = parseEntityRef({ name: raw, kind: k });
-              const tryKey = formatEntityRef(targetRef);
-              if (lookup.has(tryKey)) {
-                key = tryKey;
-                target = lookup.get(tryKey) ?? null;
-                break;
-              }
-            }
-            if (!key) {
-              const targetRef = parseEntityRef({ name: raw, kind: DEFAULT_ENTITY_KIND });
-              key = formatEntityRef(targetRef);
-            }
-          }
+          const targetRef = hasKind ? parseEntityRef(raw) : parseEntityRef({ name: raw, kind: DEFAULT_ENTITY_KIND });
+          const key = formatEntityRef(targetRef);
+          const target = lookup.get(key);
           if (target) {
             const ref = toReference(target);
             setForward.dependsOn.push(ref);
@@ -287,7 +251,7 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
             recordBroken(entity, `spec.dependsOn[${index}]`, key);
           }
         } catch (error) {
-          recordBroken(entity, `spec.dependsOn[${index}]`, String(error instanceof Error ? error.message : error));
+          recordBroken(entity, `spec.dependsOn[${index}]`, raw);
         }
       });
     }
@@ -333,7 +297,6 @@ export function getCatalogFacets(entities: CatalogEntityWithRelationships[]): Ca
   const tags = new Set<string>();
   const namespaces = new Set<string>();
   const systems = new Set<string>();
-  const domains = new Set<string>();
 
   entities.forEach((entity) => {
     if ('owner' in entity.spec && (entity.spec as { owner?: string }).owner) {
@@ -342,19 +305,7 @@ export function getCatalogFacets(entities: CatalogEntityWithRelationships[]): Ca
     (entity.metadata.tags ?? []).forEach((tag) => tags.add(tag));
     namespaces.add((entity.metadata.namespace ?? DEFAULT_ENTITY_NAMESPACE).toLowerCase());
 
-    if (entity.kind === 'System') {
-      systems.add(canonicalEntityRef('System', entity.metadata.name, entity.metadata.namespace));
-    }
-    const systemRef = 'system' in entity.spec ? (entity.spec as { system?: string }).system : undefined;
-    const normalizedSystem = normalizeFilterRef(entity.relations.system?.entityRef ?? systemRef, 'System');
-    if (normalizedSystem) systems.add(normalizedSystem);
-
-    if (entity.kind === 'Domain') {
-      domains.add(canonicalEntityRef('Domain', entity.metadata.name, entity.metadata.namespace));
-    }
-    const domainRef = 'domain' in entity.spec ? (entity.spec as { domain?: string }).domain : undefined;
-    const normalizedDomain = normalizeFilterRef(entity.relations.domain?.entityRef ?? domainRef, 'Domain');
-    if (normalizedDomain) domains.add(normalizedDomain);
+    if (entity.kind === 'System') systems.add(entity.entityRef);
   });
 
   return {
@@ -363,7 +314,7 @@ export function getCatalogFacets(entities: CatalogEntityWithRelationships[]): Ca
     kinds: catalogKindOrder.slice() as CatalogKind[],
     namespaces: Array.from(namespaces).sort(),
     systems: Array.from(systems).sort(),
-    domains: Array.from(domains).sort(),
+    domains: Array.from(entities.filter((e) => e.kind === 'Domain').map((e) => e.entityRef)).sort(),
   } satisfies CatalogFacets;
 }
 
@@ -377,8 +328,16 @@ export function filterCatalogEntities(
   filters: CatalogFilters = {},
 ): CatalogEntityWithRelationships[] {
   const requestedTags = normalizeTags(filters);
-  const normalizedSystem = normalizeFilterRef(filters.system, 'System');
-  const normalizedDomain = normalizeFilterRef(filters.domain, 'Domain');
+
+  const normalizeTargetRef = (val: string, kind: CatalogKind) => {
+    const hasKind = val.includes(':');
+    if (hasKind) return formatEntityRef(val);
+    const hasNamespace = val.includes('/');
+    if (hasNamespace) return formatEntityRef(`${kind}:${val}`);
+    return formatEntityRef({ kind, name: val });
+  };
+
+  const wantedSystem = filters.system ? normalizeTargetRef(filters.system, 'System') : undefined;
 
   return entities.filter((entity) => {
     const matchesOwner = filters.owner ? ('owner' in entity.spec ? (entity.spec as { owner?: string }).owner === filters.owner : false) : true;
@@ -387,21 +346,14 @@ export function filterCatalogEntities(
     const namespace = (entity.metadata.namespace ?? DEFAULT_ENTITY_NAMESPACE).toLowerCase();
     const matchesNamespace = filters.namespace ? namespace === filters.namespace.toLowerCase() : true;
 
-    const systemRefForEntity = entity.kind === 'System'
-      ? entity.entityRef
-      : normalizeFilterRef(entity.relations.system?.entityRef ?? (('system' in entity.spec ? (entity.spec as { system?: string }).system : undefined)), 'System');
-    const matchesSystem = normalizedSystem ? systemRefForEntity === normalizedSystem : true;
-
-    const domainRefForEntity = entity.kind === 'Domain'
-      ? entity.entityRef
-      : normalizeFilterRef(entity.relations.domain?.entityRef ?? (('domain' in entity.spec ? (entity.spec as { domain?: string }).domain : undefined)), 'Domain');
-    const matchesDomain = normalizedDomain ? domainRefForEntity === normalizedDomain : true;
+    const entitySystemRef = entity.kind === 'System' ? entity.entityRef : entity.relations.system?.entityRef;
+    const matchesSystem = wantedSystem ? entitySystemRef === wantedSystem : true;
 
     const entityTags = entity.metadata.tags ?? [];
     const matchesTags =
       requestedTags.length === 0 || requestedTags.every((tag) => entityTags.includes(tag));
 
-    return matchesOwner && matchesKind && matchesNamespace && matchesSystem && matchesDomain && matchesTags;
+    return matchesOwner && matchesKind && matchesNamespace && matchesSystem && matchesTags;
   });
 }
 

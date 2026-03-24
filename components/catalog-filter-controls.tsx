@@ -1,17 +1,16 @@
 "use client";
 
 import React from 'react';
-import type { CatalogKind, CatalogFacets, CatalogFilters } from '@/lib/content';
+import type { CatalogKind, CatalogFacets, CatalogFilters } from '@/lib/catalog-core';
 
 type CatalogFilterControlsProps = {
   facets: CatalogFacets;
-  filters: Pick<CatalogFilters, 'owner' | 'tag' | 'kind' | 'namespace' | 'system' | 'domain'>;
+  filters: Pick<CatalogFilters, 'owner' | 'tag' | 'kind' | 'namespace' | 'system'>;
   onOwnerChange?: (owner?: string) => void;
   onTagChange?: (tag?: string) => void;
   onKindChange?: (kind?: CatalogKind) => void;
   onNamespaceChange?: (namespace?: string) => void;
   onSystemChange?: (system?: string) => void;
-  onDomainChange?: (domain?: string) => void;
 };
 
 function handleSelectChange<T extends string>(
@@ -36,7 +35,7 @@ function renderOptions(values: string[], allLabel: string) {
   ];
 }
 
-export function CatalogFilterControls({ facets, filters, onOwnerChange, onTagChange, onKindChange, onNamespaceChange, onSystemChange, onDomainChange }: CatalogFilterControlsProps) {
+export function CatalogFilterControls({ facets, filters, onOwnerChange, onTagChange, onKindChange, onNamespaceChange, onSystemChange }: CatalogFilterControlsProps) {
   return (
     <section className="panel" aria-label="Catalog filters">
       <div className="kicker" style={{ marginBottom: 12 }}>
@@ -101,18 +100,6 @@ export function CatalogFilterControls({ facets, filters, onOwnerChange, onTagCha
             onChange={handleSelectChange(onSystemChange)}
           >
             {renderOptions(facets.systems, 'All systems')}
-          </select>
-        </label>
-
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span>Domain</span>
-          <select
-            id="domain-filter"
-            aria-label="Domain filter"
-            value={filters.domain ?? ''}
-            onChange={handleSelectChange(onDomainChange)}
-          >
-            {renderOptions(facets.domains, 'All domains')}
           </select>
         </label>
       </div>
