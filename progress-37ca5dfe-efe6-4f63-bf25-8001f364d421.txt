@@ -1,0 +1,19 @@
+# Progress Log
+Run: 37ca5dfe-efe6-4f63-bf25-8001f364d421
+Task: US-002 Catalog index and facet filters
+Started: 2026-03-24 01:05 CET
+
+## Codebase Patterns
+- Catalog content lives in `content/catalog` as Markdown frontmatter parsed via `gray-matter`; `getCatalogEntities` sorts entities alphabetically by title.
+- Tests run with Vitest from `tests/**/*.test.ts` using the Node environment.
+- Catalog grouping order is fixed as org → team → system → component via `catalogKindOrder`; grouping helpers pre-initialize empty lists for missing kinds.
+
+---
+
+## 2026-03-24 01:09 CET - US-002-01: Harden catalog grouping and filtering utilities
+- Added grouped catalog helper and combined catalog content builder returning filtered entities, grouped kinds, and facets.
+- Kept filtering logic pure with support for combined owner/team/tag filters and multi-tag requirements.
+- Expanded unit tests for grouping order, multi-tag filtering, combined filters, and facet calculation.
+- Files changed: `lib/content.ts`, `tests/content.test.ts`.
+- **Learnings:** Grouping helper primes all catalog kinds to keep ordering stable and allow empty groups; combined helper returns facets derived from the provided dataset while grouping filtered results.
+---
