@@ -1,0 +1,19 @@
+# Progress Log
+Run: afb33984-0308-4201-b9de-34a904bf2f51
+Task: US-004 Docs navigation shell
+Started: 2026-03-24 05:18 CET
+
+## Codebase Patterns
+- Docs navigation derives from filesystem traversal: directories are processed before files, all alphabetically, to keep deterministic order.
+- Synthetic section nodes are title-cased from slug segments; markdown pages override titles/summaries from frontmatter and carry isPage markers for nav flattening.
+- Vitest runs via `npm test`; `npm run build` performs Next.js build with type-checking.
+
+---
+
+## 2026-03-24 05:18 CET - US-004-1: Generate docs navigation model from content tree
+- Added doc tree builder that groups pages by slug parts, generates section nodes from directories, and preserves filesystem ordering.
+- Introduced flattened navigation list with previous/next neighbors derived from the tree order for prev/next UI links.
+- Added deterministic markdown walker ordering and unit tests validating hierarchy and neighbor wiring for docs content.
+- Files changed: `lib/content.ts`, `tests/content.test.ts`.
+- **Learnings:** Directory nodes are synthesized from slug segments with folder paths; leaf nodes override metadata from frontmatter; navigation order follows depth-first traversal of sorted directories/files.
+---
