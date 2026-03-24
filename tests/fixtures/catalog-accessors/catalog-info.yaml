@@ -40,7 +40,7 @@ spec:
   consumesApis:
     - identity
   dependsOn:
-    - docs-repo
+    - Resource:docs/docs-repo
 ---
 apiVersion: backstage.io/v1beta1
 kind: Component

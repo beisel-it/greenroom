@@ -49,9 +49,9 @@ spec:
   type: service
   owner: platform-team
   lifecycle: production
-  system: dev-portal
+  system: default/dev-portal
   consumesApis:
-    - platform-shell-api
+    - default/platform-shell-api
   dependsOn:
     - Resource:default/platform-db
 ---

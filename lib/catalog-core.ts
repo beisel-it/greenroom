@@ -1,7 +1,6 @@
 import {
   CatalogKind,
   catalogKindOrder,
-  DEFAULT_ENTITY_KIND,
   DEFAULT_ENTITY_NAMESPACE,
   formatEntityRef,
   parseEntityRef,
@@ -89,12 +88,11 @@ function toReference(entity: LoadedCatalogEntity): EntityReference {
   };
 }
 
-function normalizeTarget(raw: string, fallbackKind?: CatalogKind) {
-  const value = raw.trim();
-  const hasKind = value.includes(':');
-  if (hasKind) return parseEntityRef(value);
-  if (!fallbackKind) return parseEntityRef(value);
-  return parseEntityRef(`${fallbackKind}:${value}`);
+function normalizeTarget(source: LoadedCatalogEntity, raw: string, fallbackKind?: CatalogKind) {
+  return parseEntityRef(raw, {
+    defaultKind: fallbackKind,
+    defaultNamespace: source.metadata.namespace ?? DEFAULT_ENTITY_NAMESPACE,
+  });
 }
 
 function addRelationship(map: Record<string, EntityReference[]>, key: string, ref: EntityReference) {
@@ -103,6 +101,12 @@ function addRelationship(map: Record<string, EntityReference[]>, key: string, re
     entries.push(ref);
   }
   map[key] = entries;
+}
+
+function addReference(list: EntityReference[], ref: EntityReference) {
+  if (!list.some((entry) => entry.entityRef === ref.entityRef)) {
+    list.push(ref);
+  }
 }
 
 function emptyRelations(): EntityRelationships {
@@ -159,7 +163,7 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
     const domainRefValue = (entity.spec as { domain?: string }).domain;
     if (domainRefValue) {
       try {
-        const targetRef = normalizeTarget(domainRefValue, 'Domain');
+        const targetRef = normalizeTarget(entity, domainRefValue, 'Domain');
         const key = formatEntityRef(targetRef);
         const target = lookup.get(key);
         if (target && target.kind === 'Domain') {
@@ -177,7 +181,7 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
     const systemRefValue = (entity.spec as { system?: string }).system;
     if (systemRefValue) {
       try {
-        const targetRef = normalizeTarget(systemRefValue, 'System');
+        const targetRef = normalizeTarget(entity, systemRefValue, 'System');
         const key = formatEntityRef(targetRef);
         const target = lookup.get(key);
         if (target && target.kind === 'System') {
@@ -201,16 +205,21 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
     }
 
     if (entity.kind === 'Component') {
-      const { providesApis = [], consumesApis = [], dependsOn = [] } = entity.spec as ComponentSpec;
+      const {
+        providesApis = [],
+        consumesApis = [],
+        dependsOn = [],
+        dependencyOf = [],
+      } = entity.spec as ComponentSpec;
 
       providesApis.forEach((raw, index) => {
         try {
-          const targetRef = normalizeTarget(raw, 'API');
+          const targetRef = normalizeTarget(entity, raw, 'API');
           const key = formatEntityRef(targetRef);
           const target = lookup.get(key);
           if (target && target.kind === 'API') {
             const ref = toReference(target);
-            setForward.providesApis.push(ref);
+            addReference(setForward.providesApis, ref);
             addRelationship(relationships.apiProviders, target.entityRef, sourceRef);
           } else {
             recordBroken(entity, `spec.providesApis[${index}]`, key);
@@ -222,12 +231,12 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
 
       consumesApis.forEach((raw, index) => {
         try {
-          const targetRef = normalizeTarget(raw, 'API');
+          const targetRef = normalizeTarget(entity, raw, 'API');
           const key = formatEntityRef(targetRef);
           const target = lookup.get(key);
           if (target && target.kind === 'API') {
             const ref = toReference(target);
-            setForward.consumesApis.push(ref);
+            addReference(setForward.consumesApis, ref);
             addRelationship(relationships.apiConsumers, target.entityRef, sourceRef);
           } else {
             recordBroken(entity, `spec.consumesApis[${index}]`, key);
@@ -239,19 +248,76 @@ export function deriveCatalogRelationships(entities: LoadedCatalogEntity[]): {
 
       dependsOn.forEach((raw, index) => {
         try {
-          const hasKind = raw.includes(':');
-          const targetRef = hasKind ? parseEntityRef(raw) : parseEntityRef({ name: raw, kind: DEFAULT_ENTITY_KIND });
+          const targetRef = normalizeTarget(entity, raw);
           const key = formatEntityRef(targetRef);
           const target = lookup.get(key);
           if (target) {
             const ref = toReference(target);
-            setForward.dependsOn.push(ref);
+            addReference(setForward.dependsOn, ref);
             addRelationship(relationships.dependents, target.entityRef, sourceRef);
           } else {
             recordBroken(entity, `spec.dependsOn[${index}]`, key);
           }
         } catch (error) {
           recordBroken(entity, `spec.dependsOn[${index}]`, raw);
+        }
+      });
+
+      dependencyOf.forEach((raw, index) => {
+        try {
+          const targetRef = normalizeTarget(entity, raw);
+          const key = formatEntityRef(targetRef);
+          const target = lookup.get(key);
+          if (target) {
+            const ref = toReference(target);
+            addRelationship(relationships.dependents, entity.entityRef, ref);
+            addReference(byEntity[target.entityRef].dependsOn, sourceRef);
+          } else {
+            recordBroken(entity, `spec.dependencyOf[${index}]`, key);
+          }
+        } catch (error) {
+          recordBroken(entity, `spec.dependencyOf[${index}]`, raw);
+        }
+      });
+    }
+
+    if (entity.kind === 'Resource') {
+      const {
+        dependsOn = [],
+        dependencyOf = [],
+      } = entity.spec as { dependsOn?: string[]; dependencyOf?: string[] };
+
+      dependsOn.forEach((raw, index) => {
+        try {
+          const targetRef = normalizeTarget(entity, raw);
+          const key = formatEntityRef(targetRef);
+          const target = lookup.get(key);
+          if (target) {
+            const ref = toReference(target);
+            addReference(setForward.dependsOn, ref);
+            addRelationship(relationships.dependents, target.entityRef, sourceRef);
+          } else {
+            recordBroken(entity, `spec.dependsOn[${index}]`, key);
+          }
+        } catch (error) {
+          recordBroken(entity, `spec.dependsOn[${index}]`, raw);
+        }
+      });
+
+      dependencyOf.forEach((raw, index) => {
+        try {
+          const targetRef = normalizeTarget(entity, raw);
+          const key = formatEntityRef(targetRef);
+          const target = lookup.get(key);
+          if (target) {
+            const ref = toReference(target);
+            addRelationship(relationships.dependents, entity.entityRef, ref);
+            addReference(byEntity[target.entityRef].dependsOn, sourceRef);
+          } else {
+            recordBroken(entity, `spec.dependencyOf[${index}]`, key);
+          }
+        } catch (error) {
+          recordBroken(entity, `spec.dependencyOf[${index}]`, raw);
         }
       });
     }

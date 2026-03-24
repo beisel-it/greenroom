@@ -95,6 +95,83 @@ describe('deriveCatalogRelationships', () => {
       'spec.system',
     ]);
   });
+
+  it('resolves relative refs against the source entity namespace', () => {
+    const system = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'System',
+      metadata: { name: 'dev-portal', namespace: 'platform' },
+      spec: { owner: 'platform' },
+    });
+    const api = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'API',
+      metadata: { name: 'portal-api', namespace: 'platform' },
+      spec: { owner: 'platform', lifecycle: 'production', type: 'graphql', system: 'dev-portal' },
+    });
+    const resource = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Resource',
+      metadata: { name: 'platform-db', namespace: 'platform' },
+      spec: { owner: 'platform', type: 'postgres', lifecycle: 'production', system: 'dev-portal' },
+    });
+    const component = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Component',
+      metadata: { name: 'greenroom-web', namespace: 'platform' },
+      spec: {
+        owner: 'platform',
+        lifecycle: 'production',
+        type: 'website',
+        system: 'dev-portal',
+        providesApis: ['portal-api'],
+        dependsOn: ['Resource:platform-db'],
+      },
+    });
+
+    const { byEntity } = deriveCatalogRelationships([system, api, resource, component]);
+
+    expect(byEntity[component.entityRef].system?.entityRef).toBe('System:platform/dev-portal');
+    expect(byEntity[component.entityRef].providesApis.map((ref) => ref.entityRef)).toEqual([
+      'API:platform/portal-api',
+    ]);
+    expect(byEntity[component.entityRef].dependsOn.map((ref) => ref.entityRef)).toEqual([
+      'Resource:platform/platform-db',
+    ]);
+  });
+
+  it('derives reverse dependency relations from dependencyOf semantics', () => {
+    const resource = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Resource',
+      metadata: { name: 'platform-db' },
+      spec: { owner: 'platform', type: 'postgres', lifecycle: 'production', dependencyOf: ['greenroom-web'] },
+    });
+    const component = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'Component',
+      metadata: { name: 'greenroom-web' },
+      spec: { owner: 'platform', lifecycle: 'production', type: 'website', system: 'dev-portal' },
+    });
+    const system = makeEntity({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'System',
+      metadata: { name: 'dev-portal' },
+      spec: { owner: 'platform' },
+    });
+
+    const { byEntity, relationships } = deriveCatalogRelationships([system, resource, component]);
+
+    expect(byEntity[resource.entityRef].dependents.map((ref) => ref.entityRef)).toEqual([
+      'Component:default/greenroom-web',
+    ]);
+    expect(byEntity[component.entityRef].dependsOn.map((ref) => ref.entityRef)).toEqual([
+      'Resource:default/platform-db',
+    ]);
+    expect(relationships.dependents[resource.entityRef].map((ref) => ref.entityRef)).toEqual([
+      'Component:default/greenroom-web',
+    ]);
+  });
 });
 
 describe('getCatalogEntity', () => {

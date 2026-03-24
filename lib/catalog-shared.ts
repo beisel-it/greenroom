@@ -78,6 +78,10 @@ export type EntityRef = {
 };
 
 export type EntityRefInput = string | (Partial<EntityRef> & { name: string });
+export type EntityRefContext = {
+  defaultKind?: CatalogKind;
+  defaultNamespace?: string;
+};
 
 export const DEFAULT_ENTITY_NAMESPACE = 'default';
 export const DEFAULT_ENTITY_KIND: CatalogKind = 'Component';
@@ -110,9 +114,15 @@ function normalizeSegment(value: string | undefined, label: 'namespace' | 'name'
   return candidate.toLowerCase();
 }
 
-export function parseEntityRef(input: EntityRefInput): EntityRef {
+export function parseEntityRef(input: EntityRefInput, context: EntityRefContext = {}): EntityRef {
+  const defaultKind = context.defaultKind ?? DEFAULT_ENTITY_KIND;
+  const defaultNamespace = context.defaultNamespace ?? DEFAULT_ENTITY_NAMESPACE;
+
   if (typeof input === 'string') {
     const trimmed = input.trim();
+    if (!trimmed) {
+      throw new Error('Entity name is required');
+    }
     const match = ENTITY_REF_PATTERN.exec(trimmed);
     if (!match || !match.groups) {
       throw new Error(
@@ -122,22 +132,22 @@ export function parseEntityRef(input: EntityRefInput): EntityRef {
 
     const { kind, namespace, name } = match.groups;
     return {
-      kind: normalizeKind(kind),
-      namespace: normalizeSegment(namespace, 'namespace', DEFAULT_ENTITY_NAMESPACE),
+      kind: normalizeKind(kind ?? defaultKind),
+      namespace: normalizeSegment(namespace, 'namespace', defaultNamespace),
       name: normalizeSegment(name, 'name'),
     };
   }
 
   const { kind, namespace, name } = input;
   return {
-    kind: normalizeKind(kind),
-    namespace: normalizeSegment(namespace, 'namespace', DEFAULT_ENTITY_NAMESPACE),
+    kind: normalizeKind(kind ?? defaultKind),
+    namespace: normalizeSegment(namespace, 'namespace', defaultNamespace),
     name: normalizeSegment(name, 'name'),
   };
 }
 
-export function formatEntityRef(input: EntityRefInput): string {
-  const ref = parseEntityRef(input);
+export function formatEntityRef(input: EntityRefInput, context?: EntityRefContext): string {
+  const ref = parseEntityRef(input, context);
   return `${ref.kind}:${ref.namespace}/${ref.name}`;
 }
 
