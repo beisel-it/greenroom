@@ -6,10 +6,12 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, '.'),
+      '@': path.resolve(__dirname),
     },
   },
   test: {
+    environment: 'node',
+    include: ['tests/**/*.test.{ts,tsx}'],
     deps: {
       optimizer: {
         web: {
