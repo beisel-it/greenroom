@@ -10,6 +10,7 @@ Started: 2026-03-24 05:18 CET
 - Components that use Next.js Link are mocked to plain anchors in tests; keep React imported when server-rendering with Vitest.
 - Docs pages consume the doc tree and pass `slug.join('/')` as the active slug for sidebar highlighting.
 - Docs layout lives in `app/docs/layout` and reads `params.slug` (Promise) to set active sidebar links; doc content renders inside `.docs-content` while the sidebar remains sticky.
+- Prev/next navigation pulls neighbors from `getDocNavList()` via the `DocsPrevNext` component, which takes the current slug string; ensure React is imported for server-rendered docs pages/components.
 
 ---
 
@@ -35,4 +36,12 @@ Started: 2026-03-24 05:18 CET
 - Simplified individual doc pages to render content within the layout shell, expanded docs styles for content/index lists, and added tests for layout/index rendering.
 - Files changed: `app/docs/layout.tsx`, `app/docs/page.tsx`, `app/docs/[...slug]/page.tsx`, `app/globals.css`, `tests/docs-layout.test.tsx`, `tests/docs-index.test.tsx`.
 - **Learnings:** Layout receives `params.slug` as a Promise (empty on /docs) to highlight sidebar links; server-rendered JSX in tests needs React imported when using preserved JSX transform; doc index can reuse nav link styling for consistency.
+---
+
+## 2026-03-24 07:08 CET - US-004-4: Add previous/next navigation on doc pages
+- Added `DocsPrevNext` component that derives neighbors from the flattened doc nav list and renders prev/next links when available.
+- Wired doc pages to include the prev/next navigation below markdown content and tightened global styles for the pagination links.
+- Extended tests to cover prev/next neighbor rendering (including nested slugs) and doc page integration; ensured React imports for server-rendered markdown/doc pages.
+- Files changed: `components/docs-prev-next.tsx`, `app/docs/[...slug]/page.tsx`, `components/markdown.tsx`, `app/globals.css`, `tests/docs-prev-next.test.tsx`, `tests/docs-page.test.tsx`.
+- **Learnings:** Prev/next pagination relies solely on slug lookups against `getDocNavList()`; when using JSX preserve with Vitest server rendering, components/pages need explicit React imports to avoid runtime `React is not defined` errors.
 ---

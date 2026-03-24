@@ -61,6 +61,12 @@ main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
 .docs-index-item > .docs-index-list { margin-top:8px; padding-left:14px; border-left:1px solid var(--line); }
 .docs-index-entry { display:flex; flex-direction:column; gap:4px; }
 .docs-index-heading { font-weight:700; font-size: 1rem; }
+.docs-prev-next { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); display:flex; flex-direction:column; gap:12px; }
+.docs-prev-next-grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.docs-prev-next-link { display:flex; flex-direction:column; gap:4px; padding:14px 16px; border-radius:12px; border:1px solid var(--line); background: var(--panel-soft); }
+.docs-prev-next-link:hover { border-color: var(--accent); }
+.docs-prev-next-label { color: var(--muted); font-size: .85rem; letter-spacing: .05em; text-transform: uppercase; font-weight:700; }
+.docs-prev-next-title { font-weight:700; font-size: 1rem; }
 
 @media (max-width: 900px) {
   .docs-layout { grid-template-columns: 1fr; }
