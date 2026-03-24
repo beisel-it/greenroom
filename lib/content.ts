@@ -23,6 +23,14 @@ export type CatalogFacets = {
   tags: string[];
 };
 
+export type CatalogGroupedEntities = Record<CatalogKind, CatalogEntity[]>;
+
+export type CatalogContent = {
+  entities: CatalogEntity[];
+  grouped: CatalogGroupedEntities;
+  facets: CatalogFacets;
+};
+
 export type CatalogFilters = {
   owner?: string;
   team?: string;
@@ -42,6 +50,8 @@ export type DocPage = {
 const root = process.cwd();
 const catalogRoot = path.join(root, 'content', 'catalog');
 const docsRoot = path.join(root, 'content', 'docs');
+
+export const catalogKindOrder: CatalogKind[] = ['org', 'team', 'system', 'component'];
 
 function walkMarkdown(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
@@ -87,6 +97,22 @@ export function getCatalogFacets(entities: CatalogEntity[] = getCatalogEntities(
   };
 }
 
+export function groupCatalogEntities(
+  entities: CatalogEntity[],
+  kindOrder: CatalogKind[] = catalogKindOrder,
+): CatalogGroupedEntities {
+  const initial = kindOrder.reduce((acc, kind) => {
+    acc[kind] = [];
+    return acc;
+  }, {} as CatalogGroupedEntities);
+
+  return entities.reduce((acc, entity) => {
+    if (!acc[entity.kind]) acc[entity.kind] = [];
+    acc[entity.kind].push(entity);
+    return acc;
+  }, { ...initial });
+}
+
 export function filterCatalogEntities(
   entities: CatalogEntity[],
   filters: CatalogFilters = {},
@@ -105,6 +131,19 @@ export function filterCatalogEntities(
 
     return true;
   });
+}
+
+export function getCatalogContent(
+  filters: CatalogFilters = {},
+  entities: CatalogEntity[] = getCatalogEntities(),
+): CatalogContent {
+  const filtered = filterCatalogEntities(entities, filters);
+
+  return {
+    entities: filtered,
+    grouped: groupCatalogEntities(filtered),
+    facets: getCatalogFacets(entities),
+  };
 }
 
 export function getCatalogEntity(slug: string) {
