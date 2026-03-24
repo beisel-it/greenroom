@@ -6,6 +6,7 @@ Started: 2026-03-24 02:54 CET
 ## Codebase Patterns
 - Content helpers live in lib/content.ts and operate on CatalogEntity arrays derived from Markdown frontmatter.
 - Tests now use Vitest and can be run with `npm test`; Vitest handles TypeScript directly without extra config.
+- Catalog accessors (getCatalogContent/getCatalogEntity) derive and attach systems/components/brokenReferences and accept optional entity overrides so tests can stay hermetic without filesystem reads.
 
 ---
 
@@ -15,4 +16,10 @@ Started: 2026-03-24 02:54 CET
 - Ran `npm test` and `npm run build` (typecheck) successfully.
 - Files changed: lib/content.ts, lib/content.test.ts, package.json, package-lock.json
 - **Learnings:** Reference resolution should normalize on slug first then title for backward compatibility. Broken reference entries need to carry the referencing entity metadata (kind, slug, title, field, target) to surface UI warnings.
+---
+
+## 2026-03-24 04:20 CET - US-003-2: Expose relationships on catalog entities
+- Enriched catalog accessors so getCatalogContent/getCatalogEntity attach derived systems/components and brokenReferences per entity via deriveCatalogRelationships, with optional entity overrides for deterministic tests.
+- Files changed: lib/content.ts, lib/content.test.ts
+- **Learnings:** Relationship enrichment can be applied at access-time to avoid recomputing in pages, and allowing entity overrides keeps tests isolated from filesystem content.
 ---

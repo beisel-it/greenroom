@@ -37,6 +37,17 @@ export type CatalogRelationships = {
   brokenReferences: BrokenReference[];
 };
 
+export type CatalogEntityWithRelationships = CatalogEntity & {
+  systems: EntityReference[];
+  components: EntityReference[];
+  brokenReferences: BrokenReference[];
+};
+
+export type CatalogContent = {
+  entities: CatalogEntityWithRelationships[];
+  relationships: CatalogRelationships;
+};
+
 export type DocPage = {
   slugParts: string[];
   slug: string;
@@ -78,10 +89,6 @@ export function getCatalogEntities(): CatalogEntity[] {
   }).sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export function getCatalogEntity(slug: string) {
-  return getCatalogEntities().find((entity) => entity.slug === slug);
-}
-
 function normalizeKey(value: string) {
   return value.trim().toLowerCase();
 }
@@ -117,6 +124,18 @@ const toReference = (entity: CatalogEntity): EntityReference => ({
   title: entity.title,
   kind: entity.kind,
 });
+
+function applyRelationshipsToEntity(
+  entity: CatalogEntity,
+  relationships: CatalogRelationships,
+): CatalogEntityWithRelationships {
+  return {
+    ...entity,
+    systems: relationships.teamSystems[entity.slug] ?? [],
+    components: relationships.systemComponents[entity.slug] ?? [],
+    brokenReferences: relationships.brokenReferences.filter((ref) => ref.slug === entity.slug),
+  };
+}
 
 export function deriveCatalogRelationships(entities: CatalogEntity[]): CatalogRelationships {
   const teams = entities.filter((entity) => entity.kind === 'team');
@@ -163,6 +182,21 @@ export function deriveCatalogRelationships(entities: CatalogEntity[]): CatalogRe
   }
 
   return relationships;
+}
+
+export function getCatalogContent(entitiesOverride?: CatalogEntity[]): CatalogContent {
+  const entities = entitiesOverride ?? getCatalogEntities();
+  const relationships = deriveCatalogRelationships(entities);
+
+  return {
+    entities: entities.map((entity) => applyRelationshipsToEntity(entity, relationships)),
+    relationships,
+  };
+}
+
+export function getCatalogEntity(slug: string, entitiesOverride?: CatalogEntity[]) {
+  const { entities } = getCatalogContent(entitiesOverride);
+  return entities.find((entity) => entity.slug === slug);
 }
 
 export function getDocPages(): DocPage[] {
