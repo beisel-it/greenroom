@@ -35,6 +35,7 @@ export type ComponentSpec = EntitySpecBase & {
   providesApis?: string[];
   consumesApis?: string[];
   dependsOn?: string[];
+  dependencyOf?: string[];
 };
 
 export type ApiSpec = EntitySpecBase & {
@@ -51,6 +52,8 @@ export type ResourceSpec = EntitySpecBase & {
   type: string;
   owner: string;
   lifecycle?: CatalogLifecycle;
+  dependsOn?: string[];
+  dependencyOf?: string[];
 };
 
 export type DomainSpec = { owner: string };
@@ -300,6 +303,7 @@ function validateComponentSpec(input: Record<string, unknown>): ComponentSpec {
     providesApis: stringList(input.providesApis, 'spec.providesApis'),
     consumesApis: stringList(input.consumesApis, 'spec.consumesApis'),
     dependsOn: stringList(input.dependsOn, 'spec.dependsOn'),
+    dependencyOf: stringList(input.dependencyOf, 'spec.dependencyOf'),
   } satisfies ComponentSpec;
 }
 
@@ -330,7 +334,22 @@ function validateResourceSpec(input: Record<string, unknown>): ResourceSpec {
   const owner = ensureString(input.owner ?? '', 'spec.owner');
   const lifecycle = validateLifecycle(input.lifecycle);
 
-  return { ...base, type, owner, lifecycle } satisfies ResourceSpec;
+  const stringList = (value: unknown, label: string) => {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value) || value.some((v) => typeof v !== 'string')) {
+      throw new Error(`${label} must be an array of strings`);
+    }
+    return value.map((v) => ensureString(v, label));
+  };
+
+  return {
+    ...base,
+    type,
+    owner,
+    lifecycle,
+    dependsOn: stringList(input.dependsOn, 'spec.dependsOn'),
+    dependencyOf: stringList(input.dependencyOf, 'spec.dependencyOf'),
+  } satisfies ResourceSpec;
 }
 
 function validateDomainSpec(input: Record<string, unknown>): DomainSpec {

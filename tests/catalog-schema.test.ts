@@ -112,7 +112,7 @@ describe('entity ref parsing', () => {
       name: 'identity',
     });
 
-    expect(formatEntityRef({ name: 'identity', namespace: 'Team', kind: 'api' })).toBe('API:team/identity');
+    expect(formatEntityRef({ name: 'identity', namespace: 'Team', kind: 'API' })).toBe('API:team/identity');
   });
 
   it('rejects invalid references with clear messaging', () => {
