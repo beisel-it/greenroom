@@ -1,0 +1,33 @@
+# Progress Log
+Run: bbfcfe63-4bbc-4502-a368-f0188ceb9f31
+Task: US-003 Entity relationship panels
+Started: 2026-03-24 02:54 CET
+
+## Codebase Patterns
+- Content helpers live in lib/content.ts and operate on CatalogEntity arrays derived from Markdown frontmatter.
+- Tests now use Vitest and can be run with `npm test`; Vitest handles TypeScript directly without extra config.
+- Catalog accessors (getCatalogContent/getCatalogEntity) derive and attach systems/components/brokenReferences and accept optional entity overrides so tests can stay hermetic without filesystem reads.
+- Vitest needs the dedicated vitest.config.ts (with @vitejs/plugin-react and @ alias) because Next forces `jsx: preserve`; keep tests using that config so JSX is transformed.
+
+---
+
+## 2026-03-24 03:59 CET - US-003-1: Derive catalog relationships and broken references
+- Implemented deriveCatalogRelationships helper to build team-to-systems and system-to-components maps with slug-first, title-fallback resolution and broken reference reporting (referencing entity metadata included).
+- Added Vitest coverage for slug/title resolution and broken-reference detection.
+- Ran `npm test` and `npm run build` (typecheck) successfully.
+- Files changed: lib/content.ts, lib/content.test.ts, package.json, package-lock.json
+- **Learnings:** Reference resolution should normalize on slug first then title for backward compatibility. Broken reference entries need to carry the referencing entity metadata (kind, slug, title, field, target) to surface UI warnings.
+---
+
+## 2026-03-24 04:20 CET - US-003-2: Expose relationships on catalog entities
+- Enriched catalog accessors so getCatalogContent/getCatalogEntity attach derived systems/components and brokenReferences per entity via deriveCatalogRelationships, with optional entity overrides for deterministic tests.
+- Files changed: lib/content.ts, lib/content.test.ts
+- **Learnings:** Relationship enrichment can be applied at access-time to avoid recomputing in pages, and allowing entity overrides keeps tests isolated from filesystem content.
+---
+
+## 2026-03-24 04:36 CET - US-003-3: Render relationship panels and warnings on catalog pages
+- Added CatalogEntityContent component to render entity details, relationship panels for teams (systems) and systems (components), plus a broken reference warning banner and empty states when no relationships exist.
+- Updated catalog page to use the shared component; styled warning card/list in globals. Introduced Vitest config with React plugin and aliasing, plus coverage verifying linked relationships and warning rendering. Added @vitejs/plugin-react dev dependency.
+- Files changed: components/catalog-entity-content.tsx, app/catalog/[slug]/page.tsx, app/catalog/[slug]/page.test.tsx, app/globals.css, package.json, package-lock.json, tsconfig.json, vitest.config.ts
+- **Learnings:** Next build resets tsconfig.jsx to `preserve`; Vitest needs its own config (with @vitejs/plugin-react and alias) to parse TSX with that setting. Page files cannot export arbitrary symbols—share testable components via separate modules.
+---
