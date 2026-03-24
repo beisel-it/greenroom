@@ -14,9 +14,10 @@ import {
 } from './catalog-shared';
 
 export type CatalogContent = {
-  entities: CatalogEntity[];
+  entities: CatalogEntityWithRelationships[];
   grouped: CatalogGroupedEntities;
   facets: CatalogFacets;
+  relationships: CatalogRelationships;
 };
 
 export type EntityReference = {
@@ -43,11 +44,6 @@ export type CatalogEntityWithRelationships = CatalogEntity & {
   systems: EntityReference[];
   components: EntityReference[];
   brokenReferences: BrokenReference[];
-};
-
-export type CatalogContent = {
-  entities: CatalogEntityWithRelationships[];
-  relationships: CatalogRelationships;
 };
 
 export type DocPage = {
@@ -104,19 +100,6 @@ export function getCatalogFacets(entities: CatalogEntity[] = getCatalogEntities(
     owners: uniqueSorted(entities.map((entity) => entity.owner)),
     teams: uniqueSorted(entities.map((entity) => entity.team)),
     tags: uniqueSorted(entities.flatMap((entity) => entity.tags ?? [])),
-  };
-}
-
-export function getCatalogContent(
-  filters: CatalogFilters = {},
-  entities: CatalogEntity[] = getCatalogEntities(),
-): CatalogContent {
-  const filtered = filterCatalogEntities(entities, filters);
-
-  return {
-    entities: filtered,
-    grouped: groupCatalogEntities(filtered, catalogKindOrder),
-    facets: getCatalogFacets(entities),
   };
 }
 
@@ -215,12 +198,22 @@ export function deriveCatalogRelationships(entities: CatalogEntity[]): CatalogRe
   return relationships;
 }
 
-export function getCatalogContent(entitiesOverride?: CatalogEntity[]): CatalogContent {
-  const entities = entitiesOverride ?? getCatalogEntities();
-  const relationships = deriveCatalogRelationships(entities);
+export function getCatalogContent(
+  filtersOrEntities: CatalogFilters | CatalogEntity[] = {},
+  entitiesOverride?: CatalogEntity[],
+): CatalogContent {
+  const hasEntityArrayOverride = Array.isArray(filtersOrEntities);
+  const filters = hasEntityArrayOverride ? {} : filtersOrEntities;
+  const allEntities = hasEntityArrayOverride
+    ? filtersOrEntities
+    : (entitiesOverride ?? getCatalogEntities());
+  const filteredEntities = filterCatalogEntities(allEntities, filters);
+  const relationships = deriveCatalogRelationships(allEntities);
 
   return {
-    entities: entities.map((entity) => applyRelationshipsToEntity(entity, relationships)),
+    entities: filteredEntities.map((entity) => applyRelationshipsToEntity(entity, relationships)),
+    grouped: groupCatalogEntities(filteredEntities, catalogKindOrder),
+    facets: getCatalogFacets(allEntities),
     relationships,
   };
 }
