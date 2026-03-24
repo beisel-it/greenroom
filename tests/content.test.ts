@@ -13,6 +13,10 @@ import {
 describe('catalog content helpers', () => {
   const entities = getCatalogEntities();
 
+  it('returns empty facets when no entities are provided', () => {
+    expect(getCatalogFacets([])).toEqual({ owners: [], teams: [], tags: [] });
+  });
+
   it('collects unique owners, teams, and tags', () => {
     const facets = getCatalogFacets(entities);
 
@@ -28,6 +32,47 @@ describe('catalog content helpers', () => {
       'team',
       'web',
     ]);
+  });
+
+  it('handles missing optional fields while keeping facets unique and sorted', () => {
+    const sample: CatalogEntity[] = [
+      {
+        slug: 'alpha',
+        kind: 'component',
+        title: 'Alpha',
+        summary: '',
+        path: '/tmp/alpha.md',
+        body: '',
+        owner: 'Owner A',
+        tags: ['b'],
+      },
+      {
+        slug: 'beta',
+        kind: 'component',
+        title: 'Beta',
+        summary: '',
+        path: '/tmp/beta.md',
+        body: '',
+        team: 'Team A',
+        tags: ['a', 'b'],
+      },
+      {
+        slug: 'gamma',
+        kind: 'component',
+        title: 'Gamma',
+        summary: '',
+        path: '/tmp/gamma.md',
+        body: '',
+        owner: 'Owner A',
+        team: 'Team A',
+      },
+    ];
+
+    const facets = getCatalogFacets(sample);
+
+    expect(facets.owners).toEqual(['Owner A']);
+    expect(facets.teams).toEqual(['Team A']);
+    expect(facets.tags).toEqual(['a', 'b']);
   });
 
   it('groups entities by kind with stable ordering and empty lists', () => {
@@ -59,6 +104,38 @@ describe('catalog content helpers', () => {
     expect(grouped.component.map((entity) => entity.slug)).toEqual(['greenroom-web']);
   });
 
+  it('keeps catalog kind order and empty groups after filtering out all entities', () => {
+    const sample: CatalogEntity[] = [
+      {
+        slug: 'org-a',
+        kind: 'org',
+        title: 'Org A',
+        summary: '',
+        path: '/tmp/org-a.md',
+        body: '',
+        owner: 'Owner A',
+      },
+      {
+        slug: 'team-a',
+        kind: 'team',
+        title: 'Team A',
+        summary: '',
+        path: '/tmp/team-a.md',
+        body: '',
+        team: 'Team A',
+        tags: ['internal'],
+      },
+    ];
+
+    const catalog = getCatalogContent({ tags: ['non-existent'] }, sample);
+
+    expect(Object.keys(catalog.grouped)).toEqual(catalogKindOrder);
+    expect(catalog.grouped.org).toEqual([]);
+    expect(catalog.grouped.team).toEqual([]);
+    expect(catalog.grouped.system).toEqual([]);
+    expect(catalog.grouped.component).toEqual([]);
+  });
+
   it('filters by owner', () => {
     const results = filterCatalogEntities(entities, { owner: 'Platform Team' });
     const slugs = results.map((entity) => entity.slug).sort();
@@ -85,9 +162,56 @@ describe('catalog content helpers', () => {
     expect(results.map((entity) => entity.slug)).toEqual(['greenroom-web']);
   });
 
-  it('combines filters', () => {
+  it('applies combined owner, team, and tag filters with AND semantics', () => {
+    const sample: CatalogEntity[] = [
+      {
+        slug: 'alpha',
+        kind: 'component',
+        title: 'Alpha',
+        summary: '',
+        path: '/tmp/alpha.md',
+        body: '',
+        owner: 'Owner A',
+        team: 'Team A',
+        tags: ['a', 'b'],
+      },
+      {
+        slug: 'beta',
+        kind: 'component',
+        title: 'Beta',
+        summary: '',
+        path: '/tmp/beta.md',
+        body: '',
+        owner: 'Owner A',
+        team: 'Team A',
+        tags: ['a'],
+      },
+      {
+        slug: 'gamma',
+        kind: 'component',
+        title: 'Gamma',
+        summary: '',
+        path: '/tmp/gamma.md',
+        body: '',
+        owner: 'Owner A',
+        team: 'Team B',
+        tags: ['a', 'b'],
+      },
+    ];
+
+    const results = filterCatalogEntities(sample, {
+      owner: 'Owner A',
+      team: 'Team A',
+      tags: ['a', 'b'],
+    });
+
+    expect(results.map((entity) => entity.slug)).toEqual(['alpha']);
+  });
+
+  it('combines filters against live entities', () => {
     const results = filterCatalogEntities(entities, {
       owner: 'Platform Team',
+      team: 'Platform Team',
       tags: ['web'],
     });
 

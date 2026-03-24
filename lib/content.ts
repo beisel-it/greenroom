@@ -68,6 +68,11 @@ function uniqueSorted(values: (string | undefined)[]) {
   );
 }
 
+function normalizeTags(filters: CatalogFilters) {
+  const incoming = filters.tags ?? (filters.tag ? [filters.tag] : []);
+  return Array.from(new Set(incoming.filter(Boolean)));
+}
+
 export function getCatalogEntities(): CatalogEntity[] {
   return walkMarkdown(catalogRoot)
     .map((file) => {
@@ -107,8 +112,7 @@ export function groupCatalogEntities(
   }, {} as CatalogGroupedEntities);
 
   return entities.reduce((acc, entity) => {
-    if (!acc[entity.kind]) acc[entity.kind] = [];
-    acc[entity.kind].push(entity);
+    acc[entity.kind]?.push(entity);
     return acc;
   }, { ...initial });
 }
@@ -117,19 +121,17 @@ export function filterCatalogEntities(
   entities: CatalogEntity[],
   filters: CatalogFilters = {},
 ): CatalogEntity[] {
-  const requestedTags = filters.tags ?? (filters.tag ? [filters.tag] : []);
+  const requestedTags = normalizeTags(filters);
 
   return entities.filter((entity) => {
-    if (filters.owner && entity.owner !== filters.owner) return false;
-    if (filters.team && entity.team !== filters.team) return false;
+    const matchesOwner = filters.owner ? entity.owner === filters.owner : true;
+    const matchesTeam = filters.team ? entity.team === filters.team : true;
 
-    if (requestedTags.length > 0) {
-      const entityTags = entity.tags ?? [];
-      const hasAllTags = requestedTags.every((tag) => entityTags.includes(tag));
-      if (!hasAllTags) return false;
-    }
+    const entityTags = entity.tags ?? [];
+    const matchesTags =
+      requestedTags.length === 0 || requestedTags.every((tag) => entityTags.includes(tag));
 
-    return true;
+    return matchesOwner && matchesTeam && matchesTags;
   });
 }
 
@@ -141,7 +143,7 @@ export function getCatalogContent(
 
   return {
     entities: filtered,
-    grouped: groupCatalogEntities(filtered),
+    grouped: groupCatalogEntities(filtered, catalogKindOrder),
     facets: getCatalogFacets(entities),
   };
 }
