@@ -1,0 +1,13 @@
+{
+  "stage": "verify",
+  "actorRole": "verifier",
+  "project": "greenroom",
+  "backlogId": "B-GREENROOM-CORE-001",
+  "requiredFields": [
+    "summary",
+    "result"
+  ],
+  "allowedResult": [
+    "pass"
+  ]
+}

@@ -9,6 +9,40 @@ import {
 const fixturesRoot = path.join(process.cwd(), 'tests', 'fixtures', 'catalog-loader');
 
 describe('catalog-info loader', () => {
+  it('accepts the sample catalog-info.yaml with all MVP kinds and normalizes refs', () => {
+    const entities = loadCatalogEntitiesFromYaml({
+      catalogDir: path.join(process.cwd(), 'content', 'catalog'),
+    });
+
+    expect(entities.map((entity) => entity.kind)).toEqual([
+      'API',
+      'Component',
+      'Component',
+      'Domain',
+      'Location',
+      'Resource',
+      'System',
+    ]);
+
+    const greenroomWeb = entities.find((entity) => entity.metadata.name === 'greenroom-web');
+    const docsService = entities.find((entity) => entity.metadata.name === 'docs-service');
+    const developerPortal = entities.find((entity) => entity.kind === 'System');
+
+    expect(greenroomWeb?.spec).toMatchObject({
+      system: 'System:default/dev-portal',
+      providesApis: ['API:default/platform-shell-api'],
+      dependsOn: ['Resource:default/platform-db'],
+    });
+    expect(docsService?.spec).toMatchObject({
+      system: 'System:default/dev-portal',
+      consumesApis: ['API:default/platform-shell-api'],
+      dependsOn: ['Resource:default/platform-db'],
+    });
+    expect(developerPortal?.spec).toMatchObject({
+      domain: 'Domain:default/developer-experience',
+    });
+  });
+
   it('loads a single catalog-info.yaml into normalized entities with slugs', () => {
     const entities = loadCatalogEntitiesFromYaml({ catalogDir: path.join(fixturesRoot, 'single') });
 

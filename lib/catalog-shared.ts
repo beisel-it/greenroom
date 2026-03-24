@@ -290,27 +290,55 @@ function validateLifecycle(value: unknown) {
   return lifecycle as CatalogLifecycle;
 }
 
-function validateSpecBase(input: Record<string, unknown>): EntitySpecBase {
+function normalizeEntityRefValue(
+  value: unknown,
+  label: string,
+  context: EntityRefContext,
+): string {
+  return formatEntityRef(ensureString(value, label), context);
+}
+
+function normalizeEntityRefList(
+  value: unknown,
+  label: string,
+  context: EntityRefContext,
+): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string')) {
+    throw new Error(`${label} must be an array of strings`);
+  }
+
+  return value.map((entry) => formatEntityRef(ensureString(entry, label), context));
+}
+
+function validateSpecBase(input: Record<string, unknown>, namespace: string): EntitySpecBase {
   return {
-    system: input.system ? ensureString(input.system, 'spec.system') : undefined,
-    domain: input.domain ? ensureString(input.domain, 'spec.domain') : undefined,
+    system: input.system
+      ? normalizeEntityRefValue(input.system, 'spec.system', {
+          defaultKind: 'System',
+          defaultNamespace: namespace,
+        })
+      : undefined,
+    domain: input.domain
+      ? normalizeEntityRefValue(input.domain, 'spec.domain', {
+          defaultKind: 'Domain',
+          defaultNamespace: namespace,
+        })
+      : undefined,
   };
 }
 
-function validateComponentSpec(input: Record<string, unknown>): ComponentSpec {
-  const base = validateSpecBase(input);
+function validateComponentSpec(input: Record<string, unknown>, namespace: string): ComponentSpec {
+  const base = validateSpecBase(input, namespace);
   const type = ensureString(input.type ?? 'other', 'spec.type');
   const lifecycle = ensureString(input.lifecycle ?? '', 'spec.lifecycle');
   const owner = ensureString(input.owner ?? '', 'spec.owner');
-  const subcomponentOf = input.subcomponentOf ? ensureString(input.subcomponentOf, 'spec.subcomponentOf') : undefined;
-
-  const stringList = (value: unknown, label: string) => {
-    if (value === undefined) return undefined;
-    if (!Array.isArray(value) || value.some((v) => typeof v !== 'string')) {
-      throw new Error(`${label} must be an array of strings`);
-    }
-    return value.map((v) => ensureString(v, label));
-  };
+  const subcomponentOf = input.subcomponentOf
+    ? normalizeEntityRefValue(input.subcomponentOf, 'spec.subcomponentOf', {
+        defaultKind: 'Component',
+        defaultNamespace: namespace,
+      })
+    : undefined;
 
   return {
     ...base,
@@ -318,15 +346,27 @@ function validateComponentSpec(input: Record<string, unknown>): ComponentSpec {
     lifecycle: lifecycle as CatalogLifecycle,
     owner,
     subcomponentOf,
-    providesApis: stringList(input.providesApis, 'spec.providesApis'),
-    consumesApis: stringList(input.consumesApis, 'spec.consumesApis'),
-    dependsOn: stringList(input.dependsOn, 'spec.dependsOn'),
-    dependencyOf: stringList(input.dependencyOf, 'spec.dependencyOf'),
+    providesApis: normalizeEntityRefList(input.providesApis, 'spec.providesApis', {
+      defaultKind: 'API',
+      defaultNamespace: namespace,
+    }),
+    consumesApis: normalizeEntityRefList(input.consumesApis, 'spec.consumesApis', {
+      defaultKind: 'API',
+      defaultNamespace: namespace,
+    }),
+    dependsOn: normalizeEntityRefList(input.dependsOn, 'spec.dependsOn', {
+      defaultKind: DEFAULT_ENTITY_KIND,
+      defaultNamespace: namespace,
+    }),
+    dependencyOf: normalizeEntityRefList(input.dependencyOf, 'spec.dependencyOf', {
+      defaultKind: DEFAULT_ENTITY_KIND,
+      defaultNamespace: namespace,
+    }),
   } satisfies ComponentSpec;
 }
 
-function validateApiSpec(input: Record<string, unknown>): ApiSpec {
-  const base = validateSpecBase(input);
+function validateApiSpec(input: Record<string, unknown>, namespace: string): ApiSpec {
+  const base = validateSpecBase(input, namespace);
   const type = ensureString(input.type, 'spec.type');
   const lifecycle = ensureString(input.lifecycle ?? '', 'spec.lifecycle');
   const owner = ensureString(input.owner ?? '', 'spec.owner');
@@ -339,40 +379,43 @@ function validateApiSpec(input: Record<string, unknown>): ApiSpec {
   } satisfies ApiSpec;
 }
 
-function validateSystemSpec(input: Record<string, unknown>): SystemSpec {
-  const base = validateSpecBase(input);
+function validateSystemSpec(input: Record<string, unknown>, namespace: string): SystemSpec {
+  const base = validateSpecBase(input, namespace);
   const owner = ensureString(input.owner ?? '', 'spec.owner');
 
   return { ...base, owner } satisfies SystemSpec;
 }
 
-function validateResourceSpec(input: Record<string, unknown>): ResourceSpec {
-  const base = validateSpecBase(input);
+function validateResourceSpec(input: Record<string, unknown>, namespace: string): ResourceSpec {
+  const base = validateSpecBase(input, namespace);
   const type = ensureString(input.type ?? '', 'spec.type');
   const owner = ensureString(input.owner ?? '', 'spec.owner');
   const lifecycle = validateLifecycle(input.lifecycle);
-
-  const stringList = (value: unknown, label: string) => {
-    if (value === undefined) return undefined;
-    if (!Array.isArray(value) || value.some((v) => typeof v !== 'string')) {
-      throw new Error(`${label} must be an array of strings`);
-    }
-    return value.map((v) => ensureString(v, label));
-  };
 
   return {
     ...base,
     type,
     owner,
     lifecycle,
-    dependsOn: stringList(input.dependsOn, 'spec.dependsOn'),
-    dependencyOf: stringList(input.dependencyOf, 'spec.dependencyOf'),
+    dependsOn: normalizeEntityRefList(input.dependsOn, 'spec.dependsOn', {
+      defaultKind: DEFAULT_ENTITY_KIND,
+      defaultNamespace: namespace,
+    }),
+    dependencyOf: normalizeEntityRefList(input.dependencyOf, 'spec.dependencyOf', {
+      defaultKind: DEFAULT_ENTITY_KIND,
+      defaultNamespace: namespace,
+    }),
   } satisfies ResourceSpec;
 }
 
-function validateDomainSpec(input: Record<string, unknown>): DomainSpec {
+function validateDomainSpec(input: Record<string, unknown>, namespace: string): DomainSpec {
   const owner = ensureString(input.owner ?? '', 'spec.owner');
-  const subdomainOf = input.subdomainOf ? ensureString(input.subdomainOf, 'spec.subdomainOf') : undefined;
+  const subdomainOf = input.subdomainOf
+    ? normalizeEntityRefValue(input.subdomainOf, 'spec.subdomainOf', {
+        defaultKind: 'Domain',
+        defaultNamespace: namespace,
+      })
+    : undefined;
   return { owner, subdomainOf } satisfies DomainSpec;
 }
 
@@ -399,20 +442,20 @@ function validateLocationSpec(input: Record<string, unknown>): LocationSpec {
   return { type, target, targets, presence: presence as LocationSpec['presence'] } satisfies LocationSpec;
 }
 
-function validateSpec(kind: CatalogKind, input: unknown): AnyEntitySpec {
+function validateSpec(kind: CatalogKind, input: unknown, namespace: string): AnyEntitySpec {
   const spec = ensureObject(input, 'spec');
 
   switch (kind) {
     case 'Component':
-      return validateComponentSpec(spec);
+      return validateComponentSpec(spec, namespace);
     case 'API':
-      return validateApiSpec(spec);
+      return validateApiSpec(spec, namespace);
     case 'System':
-      return validateSystemSpec(spec);
+      return validateSystemSpec(spec, namespace);
     case 'Resource':
-      return validateResourceSpec(spec);
+      return validateResourceSpec(spec, namespace);
     case 'Domain':
-      return validateDomainSpec(spec);
+      return validateDomainSpec(spec, namespace);
     case 'Location':
       return validateLocationSpec(spec);
     default:
@@ -429,7 +472,7 @@ export function validateCatalogEntityEnvelope(input: unknown): CatalogEntityEnve
 
   const kind = normalizeKind(ensureString(envelope.kind, 'kind'));
   const metadata = validateEntityMetadata(envelope.metadata);
-  const spec = validateSpec(kind, envelope.spec);
+  const spec = validateSpec(kind, envelope.spec, metadata.namespace ?? DEFAULT_ENTITY_NAMESPACE);
 
   return { apiVersion, kind, metadata, spec };
 }

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "backlog-item/v1",
+  "kind": "backlog-item",
+  "id": "B-GREENROOM-CORE-001",
+  "project": "greenroom",
+  "title": "Greenroom MVP: Backstage-native catalog foundation",
+  "status": "ready",
+  "priority": "P2",
+  "createdAt": "2026-03-24T15:41:28.565Z",
+  "updatedAt": "2026-03-24T15:41:28.565Z",
+  "goal": "Implement native Backstage catalog support as the Greenroom core model.",
+  "scope": {
+    "in": [],
+    "out": []
+  },
+  "constraints": [],
+  "acceptanceCriteria": [
+    {
+      "id": "AC-001-a-run-can-be-scaffolded-from-this-backlog-item",
+      "text": "A run can be scaffolded from this backlog item",
+      "source": "backlog",
+      "status": "pending"
+    },
+    {
+      "id": "AC-002-peek-returns-has-work-until-the-next-step-is-fin",
+      "text": "peek returns HAS_WORK until the next step is finished",
+      "source": "backlog",
+      "status": "pending"
+    },
+    {
+      "id": "AC-003-finish-records-structured-output-and-advances-st",
+      "text": "finish records structured output and advances state",
+      "source": "backlog",
+      "status": "pending"
+    }
+  ],
+  "labels": [],
+  "dependencies": [],
+  "source": {
+    "kind": "manual"
+  },
+  "planning": {
+    "storySeeds": [],
+    "notes": [],
+    "derivedPlan": null
+  },
+  "nextStep": "Implement native Backstage catalog support as the Greenroom core model. Support catalog-info.yaml, Backstage envelope (apiVersion/kind/metadata/spec), entity refs, and core kinds for MVP: Component, API, System, Resource, Domain, Location. Treat relations as derived from Backstage semantics, not custom relationship fields."
+}

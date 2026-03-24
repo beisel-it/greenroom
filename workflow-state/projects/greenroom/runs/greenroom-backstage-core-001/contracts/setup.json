@@ -1,0 +1,12 @@
+{
+  "stage": "setup",
+  "actorRole": "setup",
+  "project": "greenroom",
+  "backlogId": "B-GREENROOM-CORE-001",
+  "requiredFields": [
+    "summary",
+    "repo",
+    "commands"
+  ],
+  "notes": "Record repo path and the commands the next worker should run."
+}

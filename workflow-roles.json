@@ -1,0 +1,49 @@
+{
+  "id": "feature-dev-lite-roles",
+  "version": 1,
+  "source": "lightweight-workflow-skeleton",
+  "roles": [
+    {
+      "id": "planner",
+      "name": "Planner",
+      "kind": "analysis",
+      "stages": ["plan"],
+      "description": "Turns a backlog item into ordered, verifiable stories for the run."
+    },
+    {
+      "id": "setup",
+      "name": "Setup",
+      "kind": "coding",
+      "stages": ["setup"],
+      "description": "Captures repo path, baseline, and execution commands."
+    },
+    {
+      "id": "developer",
+      "name": "Developer",
+      "kind": "coding",
+      "stages": ["implement"],
+      "description": "Implements one story at a time and records changed files plus tests."
+    },
+    {
+      "id": "verifier",
+      "name": "Verifier",
+      "kind": "verification",
+      "stages": ["verify"],
+      "description": "Checks that the run is complete enough to proceed."
+    },
+    {
+      "id": "tester",
+      "name": "Tester",
+      "kind": "testing",
+      "stages": ["test"],
+      "description": "Runs broader integration or end-to-end validation when needed."
+    },
+    {
+      "id": "reviewer",
+      "name": "Reviewer",
+      "kind": "analysis",
+      "stages": ["review"],
+      "description": "Reviews the completed change set and requests follow-up if needed."
+    }
+  ]
+}
