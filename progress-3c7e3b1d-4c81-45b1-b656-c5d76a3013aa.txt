@@ -1,0 +1,18 @@
+# Progress Log
+Run: 3c7e3b1d-4c81-45b1-b656-c5d76a3013aa
+Task: Greenroom MVP: Backstage-native catalog foundation
+Started: 2026-03-24 15:18 CET
+
+## Codebase Patterns
+- Backstage catalog model and validators live in `lib/catalog-shared.ts`; entity refs normalize to `Component:default/<name>` when kind/namespace are omitted and enforce Backstage kind casing.
+- Tests run with Vitest via `npm test`; type safety is checked with `npm run typecheck` or `npm run build`.
+
+---
+
+## 2026-03-24 15:18 CET - US-001: Backstage entity schema and ref validation
+- Added Backstage entity envelope validation covering apiVersion/kind/metadata/spec for Component, API, System, Resource, Domain, and Location, including apiVersion allowlist and required spec fields.
+- Normalized metadata validation (default namespace, name pattern enforcement, annotations/links/tags checks) and tightened entity ref parsing errors with canonical formatting defaults.
+- Added tests for schema validation success/failure cases and entity ref normalization/error handling.
+- Files changed: `lib/catalog-shared.ts`, `tests/catalog-schema.test.ts`.
+- **Learnings:** Validators enforce Backstage apiVersions (`backstage.io/v1alpha1|v1beta1|v1`) and require spec owners/types where appropriate; metadata names must match `[a-z0-9_.-]` and default namespaces to `default`; entity refs use canonical `Kind:namespace/name` formatting with clear errors on bad segments.
+---
