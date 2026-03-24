@@ -7,6 +7,7 @@ Started: 2026-03-24 01:43 CET
 - Catalog grouping uses catalogKindOrder; keep all kinds present with empty arrays to maintain ordering.
 - Catalog filters apply AND semantics for owner, team, and tags; tag filters are deduped and require all requested tags.
 - Tests run with `npm test` (Vitest).
+- Component tests can traverse React element trees directly (using React.isValidElement/Children) to inspect props and invoke handlers without a DOM environment.
 
 ---
 ## 2026-03-24 01:43 CET - US-002-01: Harden catalog content facets and filter helpers
@@ -15,4 +16,11 @@ Started: 2026-03-24 01:43 CET
 - Expanded content helper tests for empty facets, combined filters, multi-tag AND, and grouping order after filtering.
 - Files changed: lib/content.ts, tests/content.test.ts, progress-e39b16bd-86d5-4fee-800b-fce005b60469.txt
 - **Learnings:** groupCatalogEntities relies on catalogKindOrder to preserve predictable ordering and empty arrays; filterCatalogEntities dedupes requested tags and requires all requested tags; getCatalogFacets omits undefined fields while keeping derived facets sorted.
+---
+## 2026-03-24 01:56 CET - US-002-02: Add catalog filter controls component (owner, team, tag)
+- Added a client-side CatalogFilterControls component with simple select inputs for owner, team, and tag, each with an explicit "All" option and accessible labels.
+- Normalized filter change handlers to emit selected values and convert cleared selections to undefined for resets.
+- Added tests covering facet-derived options rendering and callback behavior for setting and clearing filters.
+- Files changed: components/catalog-filter-controls.tsx, tests/catalog-filter-controls.test.tsx, progress-e39b16bd-86d5-4fee-800b-fce005b60469.txt
+- **Learnings:** rendering function components directly in tests returns the element tree, allowing traversal to access nested props and invoke onChange handlers without a DOM.
 ---
