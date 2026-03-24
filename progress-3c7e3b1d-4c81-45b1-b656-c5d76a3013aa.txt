@@ -4,34 +4,33 @@ Task: Greenroom MVP: Backstage-native catalog foundation
 Started: 2026-03-24 15:18 CET
 
 ## Codebase Patterns
-- Backstage catalog model and validators live in `lib/catalog-shared.ts`; entity refs normalize to `Kind:namespace/name`.
-- Relationship computation lives in `lib/catalog-core.ts` (deriveCatalogRelationships, attachCatalogRelationships).
-- `lib/content.ts` is the thin integration layer: re-exports catalog-shared, catalog-loader, catalog-core, wraps getCatalogEntities/getCatalogContent.
-- `catalog-core.ts` is authoritative for CatalogFacets, CatalogFilters, CatalogEntityWithRelationships, filterCatalogEntities, groupCatalogEntities.
-- Facets use entity refs (e.g., `System:platform/dev-portal`) not bare names for systems/domains.
-- Filter matching normalizes entity refs for system/domain comparisons via `normalizeRef`.
-- Tests run with Vitest via `npm test`; type safety is checked with `npm run typecheck`.
-- Test isolation: run all tests together, not individually, to catch state issues.
+- Backstage catalog model and validators live in `lib/catalog-shared.ts`; entity refs normalize to `Component:default/<name>` when kind/namespace are omitted and enforce Backstage kind casing.
+- Relationship derivation and entity enrichment live in `lib/catalog-core.ts` (no fs/path deps — safe for client bundles and Vitest isolation). Core exports: `deriveCatalogRelationships`, `attachCatalogRelationships`, `filterCatalogEntities`, `groupCatalogEntities`, `getCatalogFacets`.
+- `lib/content.ts` is the SSR entry point: imports from catalog-core and wraps file I/O (yaml loader, markdown reader).
+- `normalizeTarget(raw, fallbackKind)` in catalog-core handles `namespace/name` (without kind prefix) by prepending the fallback kind — needed because Backstage YAML often omits the kind prefix for same-kind refs.
+- Tests run with Vitest via `npm test`; vitest.config.ts uses `@vitejs/plugin-react` for JSX transforms (Next.js sets jsx:preserve which breaks plain esbuild).
+- Fixture YAML files for integration tests live under `tests/fixtures/catalog-accessors/catalog-info.yaml` and `content/catalog/catalog-info.yaml`.
+- `dependsOn` references without a kind prefix fall back to `Component`; use explicit refs like `Resource:default/name` to target other kinds.
 
 ---
 
 ## 2026-03-24 15:18 CET - US-001: Backstage entity schema and ref validation
-- Added Backstage entity envelope validation covering apiVersion/kind/metadata/spec.
+- Added Backstage entity envelope validation covering apiVersion/kind/metadata/spec for Component, API, System, Resource, Domain, and Location, including apiVersion allowlist and required spec fields.
+- Normalized metadata validation (default namespace, name pattern enforcement, annotations/links/tags checks) and tightened entity ref parsing errors with canonical formatting defaults.
+- Added tests for schema validation success/failure cases and entity ref normalization/error handling.
 - Files changed: `lib/catalog-shared.ts`, `tests/catalog-schema.test.ts`.
-- **Learnings:** Validators enforce Backstage apiVersions; metadata names must match `[a-z0-9_.-]`.
+- **Learnings:** Validators enforce Backstage apiVersions (`backstage.io/v1alpha1|v1beta1|v1`) and require spec owners/types where appropriate; metadata names must match `[a-z0-9_.-]` and default namespaces to `default`; entity refs use canonical `Kind:namespace/name` formatting with clear errors on bad segments.
 ---
 
-## 2026-03-24 16:18 CET - US-004: Backstage catalog accessors, facets, and filters
-- Updated CatalogFacets to include `namespaces`, `systems`, `domains`, `tags`, `owners`, `kinds`.
-- Updated CatalogFilters to support `owner`, `namespace`, `system`, `domain`, `tag`, `tags`, `kind`.
-- Rewrote filterCatalogEntities in catalog-core.ts to support AND semantics across all filter dimensions.
-- getCatalogFacets now produces unique sorted entity refs for systems/domains.
-- Updated CatalogFilterControls to expose namespace, system, domain, kind filter selects.
-- Updated catalog-page-content.tsx to wire all filter handlers.
-- Added tests/fixtures/catalog-accessors/catalog-info.yaml with multi-namespace fixture data.
-- Added tests/catalog-accessors.test.ts covering grouping, facets, and multi-filter AND semantics.
-- Fixed vitest.config.ts (removed invalid `esbuild.jsx` option).
-- All 51 tests pass; typecheck passes.
-- Files changed: `lib/catalog-core.ts`, `lib/content.ts`, `components/catalog-filter-controls.tsx`, `components/catalog-page-content.tsx`, `tests/catalog-accessors.test.ts`, `tests/fixtures/catalog-accessors/catalog-info.yaml`.
-- **Learnings:** When `normalizeTarget` receives `namespace/name`, prepend `Kind:` to get canonical ref. Facets for systems/domains should store full entity refs (`Kind:ns/name`), not bare names. Test isolation flakiness can occur across runs due to module caching — always run full suite.
+## 2026-03-24 16:23 CET - US-003: Derive relationships from Backstage semantics
+- Implemented `deriveCatalogRelationships` in `lib/catalog-core.ts` to build forward + back-reference maps from Backstage spec fields: spec.system/domain/providesApis/consumesApis/dependsOn.
+- Back-references: Domain→systemsInDomain, System→componentsInSystem/apisInSystem/resourcesInSystem, API→providingComponents/consumingComponents, entity→dependents.
+- Broken references collected with `{ source, field, target, location }` shape for rich UI warnings.
+- Fixed `normalizeTarget` to handle `namespace/name` notation by prepending fallback kind.
+- Refactored `lib/catalog-shared.ts` to drop legacy LegacyCatalogKind and old filter/group helpers; moved them to `catalog-core.ts` as Backstage-native versions.
+- Updated `CatalogFacets` to include `namespaces`, `systems`, `domains`, `kinds` for richer filter support.
+- Updated all components and tests to use new type shapes.
+- 50 tests passing, typecheck and build clean.
+- Files changed: `lib/catalog-core.ts`, `lib/catalog-shared.ts`, `lib/content.ts`, `components/catalog-filter-controls.tsx`, `components/catalog-page-content.tsx`, `tests/content.test.ts`, `tests/catalog-filter-controls.test.tsx`, `content/catalog/catalog-info.yaml`, `vitest.config.ts`.
+- **Learnings:** `namespace/name` refs without kind prefix are common in Backstage YAML; `normalizeTarget` must handle them. catalog-core must not import node:fs/path so it stays bundle-safe. `@vitejs/plugin-react` is needed in vitest.config.ts.
 ---
