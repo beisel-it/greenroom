@@ -2,5 +2,6 @@
   "id": "B-GREENROOM-CORE-001",
   "project": "greenroom",
   "title": "Greenroom core dogfood loop",
+  "summary": "Create the minimal backlog item used by the lightweight workflow scaffold tests.",
   "nextStep": "Implement the next Greenroom core backlog slice and capture verification output."
 }

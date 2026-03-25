@@ -159,7 +159,7 @@ describe('catalog content helpers', () => {
     expect(greenroomWeb?.relations.providesApis.map((ref) => ref.entityRef).sort()).toEqual([
       'API:default/greenroom-api',
       'API:default/platform-shell-api',
-    ]);
+    ].sort());
     expect(greenroomWeb?.relations.dependsOn.map((ref) => ref.entityRef)).toEqual(['Resource:default/platform-db']);
 
     expect(docsService?.relations.system?.entityRef).toBe('System:default/dev-portal');
@@ -182,7 +182,7 @@ describe('catalog content helpers', () => {
       'API:default/greenroom-api',
       'API:default/greenroom-async-api',
       'API:default/platform-shell-api',
-    ]);
+    ].sort());
     expect(system?.relations.resourcesInSystem.map((ref) => ref.entityRef)).toEqual(['Resource:default/platform-db']);
 
     expect(resource?.relations.system?.entityRef).toBe('System:default/dev-portal');
@@ -208,11 +208,11 @@ describe('catalog content helpers', () => {
     const query = createCatalogRelationQuery(entities);
 
     expect(
-      query.getOutgoing('Component:default/greenroom-web', 'providesApi').map((edge) => edge.target.entityRef),
+      query.getOutgoing('Component:default/greenroom-web', 'providesApi').map((edge) => edge.target.entityRef).sort(),
     ).toEqual([
       'API:default/greenroom-api',
       'API:default/platform-shell-api',
-    ]);
+    ].sort());
     expect(
       query.getOutgoing('Resource:default/platform-db', 'dependencyOf').map((edge) => edge.target.entityRef).sort(),
     ).toEqual([

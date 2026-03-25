@@ -7,7 +7,7 @@ import {
   filterCatalogNeighborGroups,
   getCatalogNeighborGroups,
   type CatalogNeighborGroupKey,
-} from '@/lib/catalog-graph';
+} from '@/lib/catalog-neighbor-groups';
 
 type CatalogEntityNeighborsProps = {
   entity: CatalogEntityWithRelationships;

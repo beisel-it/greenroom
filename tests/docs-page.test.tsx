@@ -44,6 +44,8 @@ describe('Docs page', () => {
     expect(markup).toContain('Next');
     expect(markup).toContain('/docs/getting-started/overview');
     expect(markup).toContain('Overview');
+    expect(markup).toContain('/docs/adr/0002-entity-rendering');
+    expect(markup).toContain('0002-entity-rendering');
   });
 
   it('exposes static params for docs slugs', () => {
