@@ -2,6 +2,18 @@
 
 Modern internal developer portal focused on Backstage-compatible `catalog-info.yaml` ingestion, fast discovery, TechDocs, MADR, relationships, relationship graphs, and Mermaid-first documentation.
 
+<p>
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-15-black?logo=next.js" />
+  <img alt="React" src="https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript&logoColor=white" />
+  <img alt="Vitest" src="https://img.shields.io/badge/Tested%20with-Vitest-6e9f18?logo=vitest&logoColor=white" />
+  <img alt="Backstage catalog" src="https://img.shields.io/badge/Catalog-Backstage%20compatible-0a7ea4" />
+</p>
+
+## TL;DR
+
+Greenroom is a modern, file-first IDP that treats `catalog-info.yaml` as the primary contract and ships a fast discovery UX, TechDocs-style docs, MADR-friendly content, Mermaid rendering, and relationship graphs without the operational weight of a full Backstage deployment.
+
 ## ✨ Why Greenroom
 
 Greenroom is a lean, file-first alternative to a heavier Backstage installation:
@@ -31,17 +43,43 @@ The current target is a minimal drop-in replacement for Spotify Backstage for te
   <img src="docs/assets/readme/home.png" alt="Greenroom home page with catalog and docs overview" width="900" />
 </p>
 
+Catalog landing page with discovery-oriented entry points into entities and docs.
+
 ### Catalog Entity
 
 <p>
   <img src="docs/assets/readme/catalog-entity.png" alt="Greenroom catalog entity page showing relationships and ownership context" width="900" />
 </p>
 
+Entity detail surface with ownership, graph traversal, relationships, Mermaid diagrams, and broken-reference visibility.
+
 ### Docs View
 
 <p>
   <img src="docs/assets/readme/docs-page.png" alt="Greenroom documentation page rendered from Markdown with docs navigation" width="900" />
 </p>
+
+Markdown-first docs shell with TechDocs-style reading flow and adjacent navigation.
+
+## 🚀 Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## 🧱 What You Get
+
+| Area | Included in the MVP |
+| --- | --- |
+| Catalog | Backstage-style entity loading from `catalog-info.yaml`, normalized refs, slugged routes |
+| Discovery | Kind grouping, owner/tag/query filtering, catalog landing page, detail navigation |
+| Docs | Markdown docs, TechDocs-lite navigation, previous/next links |
+| Architecture | Mermaid blocks, relationship graph traversal, entity graph views |
+| Governance | ADR/MADR-friendly docs structure, repo-native authoring flow |
+| Quality | Vitest coverage, TypeScript checks, fast local feedback loop |
 
 ## 🏗️ Product Shape
 
@@ -82,13 +120,6 @@ Catalog detail pages currently expose:
 
 ## 🛠️ Local Development
 
-```bash
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000`.
-
 Useful scripts:
 
 ```bash
@@ -97,6 +128,13 @@ npm run build
 npm run typecheck
 npm run test
 ```
+
+Useful entry points:
+
+- app shell: [app/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/page.tsx)
+- catalog index: [app/catalog/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/catalog/page.tsx)
+- catalog entity page: [app/catalog/[slug]/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/catalog/[slug]/page.tsx)
+- docs shell: [app/docs/[...slug]/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/docs/[...slug]/page.tsx)
 
 ## 📁 Content Layout
 
@@ -111,6 +149,12 @@ content/
   docs/
   templates/
 ```
+
+Key content and roadmap docs:
+
+- MVP cycle: [docs/roadmap/mvp-cycle-001.md](/home/florian/.openclaw/workspace/greenroom/docs/roadmap/mvp-cycle-001.md)
+- feature stories: [docs/roadmap/feature-dev-stories.md](/home/florian/.openclaw/workspace/greenroom/docs/roadmap/feature-dev-stories.md)
+- ADR index: [docs/adr/INDEX.md](/home/florian/.openclaw/workspace/greenroom/docs/adr/INDEX.md)
 
 ## 🗺️ Roadmap
 
@@ -130,6 +174,13 @@ Active MVP framing from [docs/roadmap/mvp-cycle-001.md](/home/florian/.openclaw/
 - TechDocs and MADR as first-class content
 - relationship graph and Mermaid-backed architecture views
 - strong tests and fast local iteration
+
+Likely next increments:
+
+- cross-catalog search across docs and entities
+- richer relationship graph exploration and focused edge filtering
+- stronger spec-link rendering for OpenAPI and AsyncAPI assets
+- contributor templates for teams, systems, APIs, and ADRs
 
 ## 🚧 Explicit Non-Goals For This Cycle
 
