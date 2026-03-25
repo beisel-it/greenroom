@@ -19,8 +19,10 @@ describe('catalog-info loader', () => {
       'Component',
       'Component',
       'Domain',
+      'Domain',
       'Location',
       'Resource',
+      'System',
       'System',
     ]);
 

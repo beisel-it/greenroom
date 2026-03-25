@@ -67,6 +67,45 @@ npm run typecheck
 npm run test
 ```
 
+## Graph Relations API
+
+Greenroom exposes the existing Backstage catalog relations without adding a custom relation DSL.
+
+`GET /api/catalog/entities/:kind/:namespace/:name/relations`
+
+Response shape:
+
+- `entity`: canonical entity reference metadata for the requested node
+- `neighbors.owner`: owner group derived from `spec.owner`
+- `neighbors.domain`, `neighbors.parentDomain`, `neighbors.system`, `neighbors.parentComponent`: direct `partOf` links derived from Backstage catalog fields
+- `neighbors.providesApis`, `neighbors.consumesApis`, `neighbors.dependsOn`: direct neighbor links from catalog refs
+- `neighbors.dependents`, `neighbors.systemsInDomain`, `neighbors.subdomains`, `neighbors.componentsInSystem`, `neighbors.subcomponents`, `neighbors.apisInSystem`, `neighbors.resourcesInSystem`, `neighbors.providingComponents`, `neighbors.consumingComponents`: reverse neighbor collections derived from the same catalog relations
+- `brokenReferences`: unresolved catalog refs for the requested entity
+
+Unknown entities return `404` with:
+
+```json
+{ "error": "Catalog entity not found", "slug": "component/default/missing" }
+```
+
+## Catalog Graph Navigation
+
+Use `/catalog` to browse domains, systems, components, APIs, resources, and locations. Each entity card links to `/catalog/:kind/:namespace/:name`, where the detail page exposes:
+
+- `Catalog path` breadcrumbs for domain → system → component traversal when those relations exist
+- `Neighbors` cards grouped into toggleable relation filters for `Ownership`, `Part Of`, `Depends On`, `Provides / Consumes API`, and `System / Domain`
+- kind-specific panels such as `Systems in domain`, `Components`, `APIs`, `Resources`, `Providing components`, and `Consuming components`
+- `Broken references` warnings when catalog refs cannot be resolved from the loaded entities
+
+The supported graph links come from standard Backstage fields:
+
+- ownership: `spec.owner`
+- containment: `spec.domain`, `spec.system`, `spec.subdomainOf`, `spec.subcomponentOf`
+- API edges: `spec.providesApis`, `spec.consumesApis`
+- dependency edges: `spec.dependsOn`, `spec.dependencyOf`
+
+No additional runtime flags are required. The default in-repo catalog content is enough for the API and navigation UI to work locally.
+
 ## 🗺️ Near-term roadmap
 
 See `docs/roadmap/feature-dev-stories.md` and the Antfarm backlog entries for planned work.

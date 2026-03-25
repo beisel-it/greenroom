@@ -2,6 +2,16 @@
 apiVersion: backstage.io/v1beta1
 kind: Domain
 metadata:
+  name: business-operations
+  title: Business Operations
+  description: Operational tooling domains that have not been modeled yet.
+  tags: [domain, operations]
+spec:
+  owner: platform-team
+---
+apiVersion: backstage.io/v1beta1
+kind: Domain
+metadata:
   name: developer-experience
   title: Developer Experience
   description: Platform capabilities that improve developer productivity.
@@ -16,6 +26,17 @@ metadata:
   title: Developer Portal
   description: The Greenroom-powered developer portal experience.
   tags: [portal, platform]
+spec:
+  owner: platform-team
+  domain: developer-experience
+---
+apiVersion: backstage.io/v1beta1
+kind: System
+metadata:
+  name: release-orchestrator
+  title: Release Orchestrator
+  description: Coordinates release workflows and rollout metadata for internal teams.
+  tags: [platform, release]
 spec:
   owner: platform-team
   domain: developer-experience

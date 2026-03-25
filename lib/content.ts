@@ -232,3 +232,4 @@ export function getDocNavList(tree: DocTreeNode[] = getDocTree()): DocNavItem[] 
 export * from './catalog-shared';
 export * from './catalog-loader';
 export * from './catalog-core';
+export * from './catalog-graph';

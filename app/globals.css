@@ -35,8 +35,57 @@ main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
 .kicker { color: var(--accent); text-transform: uppercase; letter-spacing: .08em; font-size:.8rem; font-weight:700; }
 .muted { color: var(--muted); }
 .badge { display:inline-flex; padding:6px 10px; border-radius:999px; background:var(--panel-soft); color:var(--accent-2); border:1px solid var(--line); font-size:.8rem; }
+.entity-breadcrumbs { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+.entity-breadcrumb-item { display:inline-flex; align-items:center; gap:10px; min-width:0; }
+.entity-breadcrumb-label { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+.entity-breadcrumb-link,
+.entity-breadcrumb-current {
+  display:inline-flex;
+  align-items:center;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:rgba(22,32,58,0.55);
+  font-weight:600;
+}
+.entity-breadcrumb-link:hover { border-color: var(--accent); }
+.entity-breadcrumb-current { color: var(--accent); }
+.entity-breadcrumb-separator { color: var(--muted); }
 .list { display:grid; gap:12px; }
 .entity-link { display:block; padding:16px; border-radius:14px; border:1px solid var(--line); background:var(--panel-soft); }
+.neighbors-panel { display:flex; flex-direction:column; gap:16px; }
+.neighbors-header { display:flex; flex-wrap:wrap; justify-content:space-between; gap:16px; align-items:flex-start; }
+.neighbors-intro { margin: 10px 0 0; }
+.neighbors-filter-list { display:flex; flex-wrap:wrap; gap:10px; }
+.neighbors-filter {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:transparent;
+  color:var(--muted);
+  cursor:pointer;
+}
+.neighbors-filter.active {
+  color:var(--text);
+  border-color:var(--accent);
+  background:rgba(102,217,194,0.12);
+}
+.neighbors-filter-count {
+  display:inline-flex;
+  min-width:24px;
+  justify-content:center;
+  padding:2px 8px;
+  border-radius:999px;
+  background:var(--panel-soft);
+  color:var(--accent-2);
+}
+.neighbors-group-grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.neighbors-group { border:1px solid var(--line); border-radius:16px; padding:18px; background:rgba(22,32,58,0.55); }
+.neighbors-group-header { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.neighbors-group-header h2 { margin:0; font-size:1.05rem; }
 .markdown { line-height:1.7; }
 .markdown pre { background:#091120; padding:16px; border-radius:12px; overflow:auto; border:1px solid var(--line); }
 .markdown code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

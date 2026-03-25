@@ -1,0 +1,24 @@
+{
+  "docs": [
+    {
+      "id": "roadmap/feature-dev-stories.md",
+      "path": "roadmap/feature-dev-stories.md",
+      "title": "Greenroom feature-dev seed stories"
+    },
+    {
+      "id": "adr/README-ADR.md",
+      "path": "adr/README-ADR.md",
+      "title": "ADRs in Greenroom"
+    },
+    {
+      "id": "adr/INDEX.md",
+      "path": "adr/INDEX.md",
+      "title": "ADR Index (MADR-friendly)"
+    },
+    {
+      "id": "adr/0001-lean-scope.md",
+      "path": "adr/0001-lean-scope.md",
+      "title": "ADR-0001: Keep Greenroom intentionally lean"
+    }
+  ]
+}

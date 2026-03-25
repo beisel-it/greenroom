@@ -55,8 +55,11 @@ describe('catalog index page', () => {
     const { entities } = getCatalogContent();
 
     const groupedByOwner = deriveGroupedCatalog(entities, { owner: 'platform-team' });
-    expect(groupedByOwner.Domain?.length).toBeGreaterThan(0);
-    expect(groupedByOwner.System?.map((e) => e.slug)).toEqual(['system/default/dev-portal']);
+    expect(groupedByOwner.Domain?.length).toBeGreaterThan(1);
+    expect(groupedByOwner.System?.map((e) => e.slug)).toEqual([
+      'system/default/dev-portal',
+      'system/default/release-orchestrator',
+    ]);
     expect(groupedByOwner.Component?.map((e) => e.slug)).toContain('component/default/greenroom-web');
 
     const groupedByTag = deriveGroupedCatalog(entities, { tag: 'api' });

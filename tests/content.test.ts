@@ -33,19 +33,28 @@ describe('catalog content helpers', () => {
     expect(facets.tags).toContain('database');
     expect(facets.tags).toContain('domain');
     expect(facets.tags).toContain('nextjs');
+    expect(facets.tags).toContain('operations');
     expect(facets.tags).toContain('portal');
+    expect(facets.tags).toContain('release');
     expect(facets.tags).toContain('web');
     expect(facets.kinds).toEqual(catalogKindOrder);
     expect(facets.namespaces).toEqual(['default', 'platform']);
     expect(facets.systems).toContain('System:default/dev-portal');
+    expect(facets.systems).toContain('System:default/release-orchestrator');
   });
 
   it('groups entities by kind with stable ordering and empty lists', () => {
     const grouped = groupCatalogEntities(entities);
 
     expect(Object.keys(grouped)).toEqual(catalogKindOrder as unknown as string[]);
-    expect(grouped.Domain?.map((entity) => entity.slug)).toEqual(['domain/default/developer-experience']);
-    expect(grouped.System?.map((entity) => entity.slug)).toEqual(['system/default/dev-portal']);
+    expect(grouped.Domain?.map((entity) => entity.slug)).toEqual([
+      'domain/default/business-operations',
+      'domain/default/developer-experience',
+    ]);
+    expect(grouped.System?.map((entity) => entity.slug)).toEqual([
+      'system/default/dev-portal',
+      'system/default/release-orchestrator',
+    ]);
     expect(grouped.Component?.map((entity) => entity.slug)).toEqual([
       'component/default/greenroom-web',
       'component/platform/docs-service',
@@ -72,9 +81,11 @@ describe('catalog content helpers', () => {
       'api/default/platform-shell-api',
       'component/default/greenroom-web',
       'component/platform/docs-service',
+      'domain/default/business-operations',
       'domain/default/developer-experience',
       'resource/default/platform-db',
       'system/default/dev-portal',
+      'system/default/release-orchestrator',
     ].sort());
   });
 
@@ -163,6 +174,21 @@ describe('catalog content helpers', () => {
 
     expect(resource?.relations.system?.entityRef).toBe('System:default/dev-portal');
     expect(entities.every((entity) => entity.brokenReferences.length === 0)).toBe(true);
+  });
+
+  it('derives domain explorer relationships for populated and empty domains', () => {
+    const developerExperience = entities.find(
+      (entity) => entity.slug === 'domain/default/developer-experience',
+    );
+    const businessOperations = entities.find(
+      (entity) => entity.slug === 'domain/default/business-operations',
+    );
+
+    expect(developerExperience?.relations.systemsInDomain.map((ref) => ref.entityRef)).toEqual([
+      'System:default/dev-portal',
+      'System:default/release-orchestrator',
+    ]);
+    expect(businessOperations?.relations.systemsInDomain).toEqual([]);
   });
 
   it('exposes computed Backstage relations through a query helper', () => {

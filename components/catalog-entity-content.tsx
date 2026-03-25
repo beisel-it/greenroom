@@ -1,11 +1,19 @@
 import Link from 'next/link';
+import type { Route } from 'next';
 import type { BrokenReference, CatalogEntityWithRelationships, EntityReference } from '@/lib/content';
+import { CatalogEntityNeighbors } from './catalog-entity-neighbors';
 import { Markdown } from './markdown';
 
 type RelationshipPanelProps = {
   title: string;
   entities: EntityReference[];
   emptyMessage: string;
+};
+
+type BreadcrumbItem = {
+  label: string;
+  title: string;
+  href?: string;
 };
 
 function RelationshipPanel({ title, entities, emptyMessage }: RelationshipPanelProps) {
@@ -54,16 +62,74 @@ function SummaryCard({ label, value }: { label: string; value?: string }) {
   );
 }
 
+function getExplorerBreadcrumbs(entity: CatalogEntityWithRelationships): BreadcrumbItem[] {
+  const { relations } = entity;
+  const breadcrumbs: BreadcrumbItem[] = [];
+
+  if (entity.kind === 'Domain') {
+    return [{ label: 'Domain', title: entity.title }];
+  }
+
+  if (relations.domain) {
+    breadcrumbs.push({
+      label: 'Domain',
+      title: relations.domain.title,
+      href: `/catalog/${relations.domain.slug}`,
+    });
+  }
+
+  if (entity.kind === 'System') {
+    breadcrumbs.push({ label: 'System', title: entity.title });
+    return breadcrumbs;
+  }
+
+  if (relations.system) {
+    breadcrumbs.push({
+      label: 'System',
+      title: relations.system.title,
+      href: `/catalog/${relations.system.slug}`,
+    });
+  }
+
+  breadcrumbs.push({ label: entity.kind, title: entity.title });
+  return breadcrumbs;
+}
+
+function ExplorerBreadcrumbs({ items }: { items: BreadcrumbItem[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <nav aria-label="Catalog path" className="entity-breadcrumbs">
+      {items.map((item, index) => (
+        <div key={`${item.label}:${item.title}`} className="entity-breadcrumb-item">
+          <span className="entity-breadcrumb-label">{item.label}</span>
+          {item.href ? (
+            <Link href={item.href as Route} className="entity-breadcrumb-link">
+              {item.title}
+            </Link>
+          ) : (
+            <span className="entity-breadcrumb-current">{item.title}</span>
+          )}
+          {index < items.length - 1 ? <span className="entity-breadcrumb-separator">/</span> : null}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
 export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRelationships }) {
   const { relations } = entity;
   const owner = 'owner' in entity.spec ? (entity.spec as { owner?: string }).owner : undefined;
   const system = relations.system?.title ?? relations.system?.entityRef;
   const domain = relations.domain?.title ?? relations.domain?.entityRef;
+  const breadcrumbs = getExplorerBreadcrumbs(entity);
 
   const showBody = Boolean(entity.summary || entity.metadata.description || entity.metadata.links?.length);
 
   return (
     <section className="panel">
+      <ExplorerBreadcrumbs items={breadcrumbs} />
+
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'start' }}>
         <div>
           <div className="kicker">{entity.kind}</div>
@@ -81,6 +147,8 @@ export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRela
       </div>
 
       <BrokenReferenceBanner references={entity.brokenReferences} />
+
+      <CatalogEntityNeighbors entity={entity} />
 
       {entity.kind === 'Domain' && (
         <RelationshipPanel
