@@ -23,6 +23,7 @@ describe('catalog graph helper', () => {
     expect(response?.neighbors.system?.entityRef).toBe('System:default/dev-portal');
     expect(response?.neighbors.providesApis.map((ref) => ref.entityRef)).toEqual([
       'API:default/platform-shell-api',
+      'API:default/greenroom-api',
     ]);
     expect(response?.neighbors.dependsOn.map((ref) => ref.entityRef)).toEqual([
       'Resource:default/platform-db',
@@ -40,6 +41,8 @@ describe('catalog graph helper', () => {
       'Component:platform/docs-service',
     ]);
     expect(response?.neighbors.apisInSystem.map((ref) => ref.entityRef)).toEqual([
+      'API:default/greenroom-api',
+      'API:default/greenroom-async-api',
       'API:default/platform-shell-api',
     ]);
     expect(response?.neighbors.resourcesInSystem.map((ref) => ref.entityRef)).toEqual([

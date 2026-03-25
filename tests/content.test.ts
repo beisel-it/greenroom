@@ -27,7 +27,7 @@ describe('catalog content helpers', () => {
   it('collects unique owners, tags, and kinds', () => {
     const facets = getCatalogFacets(entities);
 
-    expect(facets.owners).toEqual(['platform-team']);
+    expect(facets.owners).toEqual(['api-team', 'platform-team']);
     // tags come from catalog-info.yaml and may include graphql etc.
     expect(facets.tags).toContain('api');
     expect(facets.tags).toContain('database');
@@ -59,7 +59,11 @@ describe('catalog content helpers', () => {
       'component/default/greenroom-web',
       'component/platform/docs-service',
     ]);
-    expect(grouped.API?.map((entity) => entity.slug)).toEqual(['api/default/platform-shell-api']);
+    expect(grouped.API?.map((entity) => entity.slug)).toEqual([
+      'api/default/greenroom-api',
+      'api/default/greenroom-async-api',
+      'api/default/platform-shell-api',
+    ]);
     expect(grouped.Resource?.map((entity) => entity.slug)).toEqual(['resource/default/platform-db']);
     expect(grouped.Location?.map((entity) => entity.slug)).toEqual(['location/default/sample-catalog-source']);
   });
@@ -116,6 +120,8 @@ describe('catalog content helpers', () => {
 
     const systemFiltered = filterCatalogEntities(entities, { system: 'dev-portal' });
     expect(systemFiltered.map((entity) => entity.slug).sort()).toEqual([
+      'api/default/greenroom-api',
+      'api/default/greenroom-async-api',
       'api/default/platform-shell-api',
       'component/default/greenroom-web',
       'component/platform/docs-service',
@@ -133,7 +139,7 @@ describe('catalog content helpers', () => {
       'component/default/greenroom-web',
       'component/platform/docs-service',
     ]);
-    expect(catalog.facets.owners).toEqual(['platform-team']);
+    expect(catalog.facets.owners).toEqual(['api-team', 'platform-team']);
     expect(catalog.facets.tags).toContain('portal');
     expect(catalog.facets.systems).toContain('System:default/dev-portal');
   });
@@ -150,7 +156,10 @@ describe('catalog content helpers', () => {
     const resource = entities.find((entity) => entity.slug === 'resource/default/platform-db');
 
     expect(greenroomWeb?.relations.system?.entityRef).toBe('System:default/dev-portal');
-    expect(greenroomWeb?.relations.providesApis.map((ref) => ref.entityRef)).toEqual(['API:default/platform-shell-api']);
+    expect(greenroomWeb?.relations.providesApis.map((ref) => ref.entityRef)).toEqual([
+      'API:default/platform-shell-api',
+      'API:default/greenroom-api',
+    ]);
     expect(greenroomWeb?.relations.dependsOn.map((ref) => ref.entityRef)).toEqual(['Resource:default/platform-db']);
 
     expect(docsService?.relations.system?.entityRef).toBe('System:default/dev-portal');
@@ -169,7 +178,11 @@ describe('catalog content helpers', () => {
       'Component:default/greenroom-web',
       'Component:platform/docs-service',
     ]);
-    expect(system?.relations.apisInSystem.map((ref) => ref.entityRef)).toEqual(['API:default/platform-shell-api']);
+    expect(system?.relations.apisInSystem.map((ref) => ref.entityRef)).toEqual([
+      'API:default/greenroom-api',
+      'API:default/greenroom-async-api',
+      'API:default/platform-shell-api',
+    ]);
     expect(system?.relations.resourcesInSystem.map((ref) => ref.entityRef)).toEqual(['Resource:default/platform-db']);
 
     expect(resource?.relations.system?.entityRef).toBe('System:default/dev-portal');
@@ -196,7 +209,10 @@ describe('catalog content helpers', () => {
 
     expect(
       query.getOutgoing('Component:default/greenroom-web', 'providesApi').map((edge) => edge.target.entityRef),
-    ).toEqual(['API:default/platform-shell-api']);
+    ).toEqual([
+      'API:default/greenroom-api',
+      'API:default/platform-shell-api',
+    ]);
     expect(
       query.getOutgoing('Resource:default/platform-db', 'dependencyOf').map((edge) => edge.target.entityRef).sort(),
     ).toEqual([
@@ -206,6 +222,8 @@ describe('catalog content helpers', () => {
     expect(
       query.getOutgoing('System:default/dev-portal', 'hasPart').map((edge) => edge.target.entityRef).sort(),
     ).toEqual([
+      'API:default/greenroom-api',
+      'API:default/greenroom-async-api',
       'API:default/platform-shell-api',
       'Component:default/greenroom-web',
       'Component:platform/docs-service',
@@ -218,36 +236,52 @@ describe('docs navigation helpers', () => {
   it('builds a hierarchical tree with filesystem-driven ordering', () => {
     const tree = getDocTree();
 
-    expect(tree.map((node) => node.slug)).toEqual(['getting-started']);
-    expect(tree[0].title).toBe('Getting Started');
+    expect(tree.map((node) => node.slug)).toEqual(['adr', 'getting-started']);
+    expect(tree[0].title).toBe('Adr');
     expect(tree[0].children.map((child) => child.slug)).toEqual([
+      'adr/0002-entity-rendering',
+    ]);
+    expect(tree[1].title).toBe('Getting Started');
+    expect(tree[1].children.map((child) => child.slug)).toEqual([
       'getting-started/contributing',
       'getting-started/overview',
     ]);
-    expect(tree[0].children[0].summary).toContain('Markdown');
-    expect(tree[0].children[1].title).toBe('Overview');
+    expect(tree[1].children[0].summary).toContain('Markdown');
+    expect(tree[1].children[1].title).toBe('Overview');
   });
 
   it('flattens the tree into an ordered list with previous and next neighbors', () => {
     const nav = getDocNavList();
 
     expect(nav.map((item) => item.slug)).toEqual([
+      'adr/0002-entity-rendering',
       'getting-started/contributing',
       'getting-started/overview',
     ]);
 
     expect(nav[0].previous).toBeUndefined();
     expect(nav[0].next).toEqual({
+      slug: 'getting-started/contributing',
+      title: 'Contributing content',
+      slugParts: ['getting-started', 'contributing'],
+    });
+
+    expect(nav[1].previous).toEqual({
+      slug: 'adr/0002-entity-rendering',
+      title: '0002-entity-rendering',
+      slugParts: ['adr', '0002-entity-rendering'],
+    });
+    expect(nav[1].next).toEqual({
       slug: 'getting-started/overview',
       title: 'Overview',
       slugParts: ['getting-started', 'overview'],
     });
 
-    expect(nav[1].previous).toEqual({
+    expect(nav[2].previous).toEqual({
       slug: 'getting-started/contributing',
       title: 'Contributing content',
       slugParts: ['getting-started', 'contributing'],
     });
-    expect(nav[1].next).toBeUndefined();
+    expect(nav[2].next).toBeUndefined();
   });
 });
