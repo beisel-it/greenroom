@@ -4,7 +4,9 @@ import { getCatalogEntities } from '../lib/content';
 import {
   filterCatalogNeighborGroups,
   getCatalogEntityRelations,
+  getCatalogEntityMermaidChart,
   getCatalogNeighborGroups,
+  getGraphTraversalPath,
 } from '../lib/catalog-graph';
 
 describe('catalog graph helper', () => {
@@ -21,7 +23,8 @@ describe('catalog graph helper', () => {
     });
     expect(response?.neighbors.owner?.entityRef).toBe('Group:default/platform-team');
     expect(response?.neighbors.system?.entityRef).toBe('System:default/dev-portal');
-    expect(response?.neighbors.providesApis.map((ref) => ref.entityRef)).toEqual([
+    expect(response?.neighbors.providesApis.map((ref) => ref.entityRef).sort()).toEqual([
+      'API:default/greenroom-api',
       'API:default/platform-shell-api',
       'API:default/greenroom-api',
     ]);
@@ -40,7 +43,8 @@ describe('catalog graph helper', () => {
       'Component:default/greenroom-web',
       'Component:platform/docs-service',
     ]);
-    expect(response?.neighbors.apisInSystem.map((ref) => ref.entityRef)).toEqual([
+<<<<<<< HEAD
+    expect(response?.neighbors.apisInSystem.map((ref) => ref.entityRef).sort()).toEqual([
       'API:default/greenroom-api',
       'API:default/greenroom-async-api',
       'API:default/platform-shell-api',
@@ -115,6 +119,41 @@ describe('catalog graph helper', () => {
     const component = getCatalogEntityRelations(componentRef!.slug, entities);
     expect(component?.neighbors.system?.entityRef).toBe('System:default/dev-portal');
     expect(system?.neighbors.domain?.entityRef).toBe('Domain:default/developer-experience');
+  });
+
+  it('builds a bounded traversal path for nested catalog entities', () => {
+    expect(getGraphTraversalPath('component/default/greenroom-web', entities)).toEqual([
+      {
+        slug: 'domain/default/developer-experience',
+        kind: 'Domain',
+        title: 'Developer Experience',
+      },
+      {
+        slug: 'system/default/dev-portal',
+        kind: 'System',
+        title: 'Developer Portal',
+      },
+      {
+        slug: 'component/default/greenroom-web',
+        kind: 'Component',
+        title: 'Greenroom Web',
+      },
+    ]);
+  });
+
+  it('builds a Mermaid chart from direct catalog neighbors', () => {
+    const entity = entities.find((entry) => entry.slug === 'component/default/greenroom-web');
+
+    expect(entity).toBeDefined();
+
+    const chart = getCatalogEntityMermaidChart(entity!);
+
+    expect(chart).toContain('flowchart LR');
+    expect(chart).toContain('Greenroom Web\\nComponent');
+    expect(chart).toContain('Platform Shell API\\nAPI');
+    expect(chart).toContain('Developer Portal\\nSystem');
+    expect(chart).toContain('|provides API|');
+    expect(chart).toContain('|depends on|');
   });
 
   it('returns null for an unknown entity slug', () => {

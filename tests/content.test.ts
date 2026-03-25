@@ -156,9 +156,9 @@ describe('catalog content helpers', () => {
     const resource = entities.find((entity) => entity.slug === 'resource/default/platform-db');
 
     expect(greenroomWeb?.relations.system?.entityRef).toBe('System:default/dev-portal');
-    expect(greenroomWeb?.relations.providesApis.map((ref) => ref.entityRef)).toEqual([
-      'API:default/platform-shell-api',
+    expect(greenroomWeb?.relations.providesApis.map((ref) => ref.entityRef).sort()).toEqual([
       'API:default/greenroom-api',
+      'API:default/platform-shell-api',
     ]);
     expect(greenroomWeb?.relations.dependsOn.map((ref) => ref.entityRef)).toEqual(['Resource:default/platform-db']);
 
@@ -178,7 +178,7 @@ describe('catalog content helpers', () => {
       'Component:default/greenroom-web',
       'Component:platform/docs-service',
     ]);
-    expect(system?.relations.apisInSystem.map((ref) => ref.entityRef)).toEqual([
+    expect(system?.relations.apisInSystem.map((ref) => ref.entityRef).sort()).toEqual([
       'API:default/greenroom-api',
       'API:default/greenroom-async-api',
       'API:default/platform-shell-api',

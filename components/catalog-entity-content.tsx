@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import type { BrokenReference, CatalogEntityWithRelationships, EntityReference } from '@/lib/content';
+import { CatalogEntityGraph } from './catalog-entity-graph';
 import { CatalogEntityNeighbors } from './catalog-entity-neighbors';
 import { Markdown } from './markdown';
 
@@ -179,6 +180,7 @@ export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRela
       <BrokenReferenceBanner references={entity.brokenReferences} />
 
       <CatalogEntityNeighbors entity={entity} />
+      <CatalogEntityGraph entity={entity} />
 
       {entity.kind === 'Domain' && (
         <RelationshipPanel

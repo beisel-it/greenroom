@@ -85,6 +85,7 @@ describe('CatalogEntityContent relationships', () => {
     expect(html).toContain('System / Domain');
     expect(html).toContain('Provides / Consumes API');
     expect(html).toContain('Depends On');
+    expect(html).toContain('Relationship diagram');
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('/catalog/system/default/dev-portal');
     expect(html).toContain('/catalog/api/default/platform-shell-api');

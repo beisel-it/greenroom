@@ -1,0 +1,6 @@
+{
+  "id": "B-GREENROOM-CORE-001",
+  "project": "greenroom",
+  "title": "Greenroom core dogfood loop",
+  "nextStep": "Implement the next Greenroom core backlog slice and capture verification output."
+}
