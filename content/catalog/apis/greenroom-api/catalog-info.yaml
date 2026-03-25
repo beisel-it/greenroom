@@ -1,0 +1,17 @@
+---
+apiVersion: backstage.io/v1beta1
+kind: API
+metadata:
+  name: greenroom-api
+  title: Greenroom API
+  description: OpenAPI 3.0 service for Greenroom platform.
+  tags: [api, openapi]
+spec:
+  type: openapi
+  owner: api-team
+  lifecycle: production
+  system: dev-portal
+  # Optional: provide a link to the OpenAPI document
+  links:
+    - url: https://example.com/openapi/greenroom.yaml
+      title: OpenAPI spec
