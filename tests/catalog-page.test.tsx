@@ -63,7 +63,11 @@ describe('catalog index page', () => {
     expect(groupedByOwner.Component?.map((e) => e.slug)).toContain('component/default/greenroom-web');
 
     const groupedByTag = deriveGroupedCatalog(entities, { tag: 'api' });
-    expect(groupedByTag.API?.map((e) => e.slug)).toEqual(['api/default/platform-shell-api']);
+    expect(groupedByTag.API?.map((e) => e.slug)).toEqual([
+      'api/default/greenroom-api',
+      'api/default/greenroom-async-api',
+      'api/default/platform-shell-api',
+    ]);
   });
 
   it('clears filters back to the full grouped catalog view', () => {

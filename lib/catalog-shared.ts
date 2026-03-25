@@ -43,6 +43,7 @@ export type ApiSpec = EntitySpecBase & {
   type: ApiType | string;
   owner: string;
   lifecycle: CatalogLifecycle | string;
+  links?: EntityLink[];
 };
 
 export type SystemSpec = EntitySpecBase & {
@@ -284,6 +285,30 @@ export function validateEntityMetadata(input: unknown): EntityMetadata {
   };
 }
 
+function validateEntityLinks(value: unknown, label: string): EntityLink[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw new Error(`${label} must be an array of links`);
+
+  return value.map((link, index) => {
+    const linkObject = ensureObject(link, `${label}[${index}]`);
+    return {
+      url: ensureString(linkObject.url, `${label}[${index}].url`),
+      title:
+        linkObject.title === undefined
+          ? undefined
+          : ensureString(linkObject.title, `${label}[${index}].title`),
+      icon:
+        linkObject.icon === undefined
+          ? undefined
+          : ensureString(linkObject.icon, `${label}[${index}].icon`),
+      type:
+        linkObject.type === undefined
+          ? undefined
+          : ensureString(linkObject.type, `${label}[${index}].type`),
+    } satisfies EntityLink;
+  });
+}
+
 function validateLifecycle(value: unknown) {
   if (value === undefined) return undefined;
   const lifecycle = ensureString(value, 'spec.lifecycle');
@@ -376,6 +401,7 @@ function validateApiSpec(input: Record<string, unknown>, namespace: string): Api
     type: type as ApiType,
     lifecycle: lifecycle as CatalogLifecycle,
     owner,
+    links: validateEntityLinks(input.links, 'spec.links'),
   } satisfies ApiSpec;
 }
 

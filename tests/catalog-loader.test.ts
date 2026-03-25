@@ -16,6 +16,8 @@ describe('catalog-info loader', () => {
 
     expect(entities.map((entity) => entity.kind)).toEqual([
       'API',
+      'API',
+      'API',
       'Component',
       'Component',
       'Domain',
@@ -28,11 +30,20 @@ describe('catalog-info loader', () => {
 
     const greenroomWeb = entities.find((entity) => entity.metadata.name === 'greenroom-web');
     const docsService = entities.find((entity) => entity.metadata.name === 'docs-service');
-    const developerPortal = entities.find((entity) => entity.kind === 'System');
+    const developerPortal = entities.find(
+      (entity) => entity.kind === 'System' && entity.metadata.name === 'dev-portal',
+    );
+    const greenroomApi = entities.find((entity) => entity.metadata.name === 'greenroom-api');
+    const greenroomAsyncApi = entities.find(
+      (entity) => entity.metadata.name === 'greenroom-async-api',
+    );
 
     expect(greenroomWeb?.spec).toMatchObject({
       system: 'System:default/dev-portal',
-      providesApis: ['API:default/platform-shell-api'],
+      providesApis: [
+        'API:default/platform-shell-api',
+        'API:default/greenroom-api',
+      ],
       dependsOn: ['Resource:default/platform-db'],
     });
     expect(docsService?.spec).toMatchObject({
@@ -42,6 +53,26 @@ describe('catalog-info loader', () => {
     });
     expect(developerPortal?.spec).toMatchObject({
       domain: 'Domain:default/developer-experience',
+    });
+    expect(greenroomApi?.spec).toMatchObject({
+      type: 'openapi',
+      system: 'System:default/dev-portal',
+      links: [
+        {
+          url: 'https://example.com/openapi/greenroom.yaml',
+          title: 'OpenAPI spec',
+        },
+      ],
+    });
+    expect(greenroomAsyncApi?.spec).toMatchObject({
+      type: 'asyncapi',
+      system: 'System:default/dev-portal',
+      links: [
+        {
+          url: 'https://example.com/asyncapi.yaml',
+          title: 'AsyncAPI spec',
+        },
+      ],
     });
   });
 

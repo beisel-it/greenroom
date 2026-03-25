@@ -159,6 +159,36 @@ describe('validateCatalogEntityEnvelope', () => {
     });
   });
 
+  it('preserves API spec links for referenced integration specs', () => {
+    const api = validateCatalogEntityEnvelope({
+      apiVersion: 'backstage.io/v1beta1',
+      kind: 'API',
+      metadata: { name: 'greenroom-api' },
+      spec: {
+        type: 'openapi',
+        lifecycle: 'production',
+        owner: 'api-team',
+        system: 'dev-portal',
+        links: [
+          {
+            url: 'https://example.com/openapi/greenroom.yaml',
+            title: 'OpenAPI spec',
+          },
+        ],
+      },
+    });
+
+    expect(api.spec).toMatchObject({
+      system: 'System:default/dev-portal',
+      links: [
+        {
+          url: 'https://example.com/openapi/greenroom.yaml',
+          title: 'OpenAPI spec',
+        },
+      ],
+    });
+  });
+
   it.each([
     [
       'Component',
