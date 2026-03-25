@@ -42,6 +42,10 @@ const kindCopy: Record<CatalogKind, { heading: string; description: string; empt
 
 function EntityCard({ entity }: { entity: CatalogEntityWithRelationships }) {
   const summary = entity.metadata.description ?? entity.summary ?? 'View entity details';
+  const owner = (entity.spec as { owner?: string }).owner;
+  const docsLink = entity.metadata.links?.[0];
+  const relatedSystem = entity.kind === 'System' ? entity.title : entity.relations.system?.title;
+  const relatedDomain = entity.kind === 'Domain' ? entity.title : entity.relations.domain?.title;
 
   return (
     <Link key={entity.slug} href={`/catalog/${entity.slug}`} className="entity-link">
@@ -55,6 +59,12 @@ function EntityCard({ entity }: { entity: CatalogEntityWithRelationships }) {
         </div>
       </div>
       <p className="muted">{summary}</p>
+      <div className="catalog-card-meta">
+        {owner ? <span className="badge">Owner: {owner}</span> : null}
+        {relatedDomain ? <span className="badge">Domain: {relatedDomain}</span> : null}
+        {relatedSystem ? <span className="badge">System: {relatedSystem}</span> : null}
+        {docsLink ? <span className="badge">Reference: {docsLink.title ?? 'Linked doc'}</span> : null}
+      </div>
     </Link>
   );
 }

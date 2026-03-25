@@ -5,6 +5,7 @@ import { renderToString } from 'react-dom/server';
 import CatalogPage from '../app/catalog/page';
 import { CatalogGroups } from '../components/catalog-groups';
 import { deriveGroupedCatalog } from '../components/catalog-page-content';
+import { CatalogFilterControls } from '../components/catalog-filter-controls';
 import { getCatalogContent } from '../lib/content';
 import { CatalogGroupedEntities, catalogKindOrder, groupCatalogEntities } from '../lib/catalog-core';
 
@@ -22,7 +23,10 @@ describe('catalog index page', () => {
 
     expect(markup).toContain('Catalog');
     expect(markup).toContain('Backstage-native catalog entities');
+    expect(markup).toContain('Discovery');
+    expect(markup).toContain('Open docs index');
     expect(markup).toContain('Filters');
+    expect(markup).toContain('Search');
 
     expect(markup).toContain('Domains');
     expect(markup).toContain('Systems');
@@ -34,6 +38,7 @@ describe('catalog index page', () => {
     expect(markup).toContain('/catalog/component/default/greenroom-web');
     expect(markup).toContain('/catalog/system/default/dev-portal');
     expect(markup).toContain('/catalog/domain/default/developer-experience');
+    expect(markup).toContain('platform-team');
   });
 
   it('shows empty states for kinds without entities', () => {
@@ -70,6 +75,16 @@ describe('catalog index page', () => {
     ]);
   });
 
+  it('applies text query filters before grouping', () => {
+    const { entities } = getCatalogContent();
+
+    const groupedByQuery = deriveGroupedCatalog(entities, { query: 'release orchestrator' });
+
+    expect(groupedByQuery.System?.map((entity) => entity.slug)).toEqual([
+      'system/default/release-orchestrator',
+    ]);
+  });
+
   it('clears filters back to the full grouped catalog view', () => {
     const { entities } = getCatalogContent();
 
@@ -77,5 +92,25 @@ describe('catalog index page', () => {
     const fullGrouped = groupCatalogEntities(entities);
 
     expect(resetGrouped).toEqual(fullGrouped);
+  });
+
+  it('renders active filters and query controls', () => {
+    const { facets } = getCatalogContent();
+    const markup = renderToString(
+      <CatalogFilterControls
+        facets={facets}
+        filters={{ query: 'portal', owner: 'platform-team' }}
+        resultCount={2}
+        totalCount={8}
+      />,
+    );
+
+    expect(markup).toContain('Search filter');
+    expect(markup).toContain('2');
+    expect(markup).toContain('8');
+    expect(markup).toContain('entities');
+    expect(markup).toContain('Search: portal');
+    expect(markup).toContain('Owner: platform-team');
+    expect(markup).toContain('Clear filters');
   });
 });
