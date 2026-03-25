@@ -55,6 +55,8 @@ spec:
   system: dev-portal
   providesApis:
     - platform-shell-api
+
+    - greenroom-api
   dependsOn:
     - Resource:default/platform-db
 ---
