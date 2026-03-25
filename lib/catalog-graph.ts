@@ -156,3 +156,7 @@ export function getCatalogEntityRelations(
     brokenReferences: entity.brokenReferences,
   };
 }
+export type TraversalStep = { slug: string; kind: string; title: string; };
+export function getGraphTraversalPath(startSlug: string, entitiesOverride?: any[], maxDepth: number = 3): TraversalStep[] | null {
+  return null;
+}
