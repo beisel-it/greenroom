@@ -30,35 +30,11 @@ async function main() {
     const nameSlug = pathWithNs.replace(/[\\/\s]+/g, "-").replace(/[^a-zA-Z0-9-]/g, "");
     const title = p.name || pathWithNs;
     const description = p.description || "";
-    const doc = [
-      `apiVersion: backstage.io/v1beta1`,
-      `kind: Component`,
-      `metadata:`,
-      `  name: ${nameSlug}`,
-      `  namespace: gitlab`,
-      `  title: "${title.replace(/"/g, ")}"`,
-      `  description: "${description.replace(/"/g, ")}"`,
-      `spec:`,
-      `  type: library`,
-      `  owner: gitlab`,
-      `  lifecycle: production`,
-      ``,
-    ].join("\n");
-    return doc;
-  });
-
-  const targetDir = path.resolve(process.cwd(), "content", "catalog", "gitlab");
-  if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir, { recursive: true });
-  }
-  const targetFile = path.join(targetDir, "catalog-info.yaml");
-  // join with document separators
-  const content = docs.join("\n---\n\n");
-  fs.writeFileSync(targetFile, content, "utf8");
-  console.log(`Wrote ${targetFile} with ${docs.length} documents`);
-}
-
-main().catch((err) => {
-  console.error("Error generating GitLab catalog:", err);
-  process.exit(1);
-});
+    const lines = [
+      "apiVersion: backstage.io/v1beta1",
+      "kind: Component",
+      "metadata:",
+      "  name: " + nameSlug,
+      "  namespace: gitlab",
+      "  title: \"" + title.replace(/\"/g, \') + ",
+      
