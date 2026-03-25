@@ -5,6 +5,7 @@ import type {
   EntityReference,
 } from './catalog-core';
 import { loadCatalogEntitiesFromYaml } from './catalog-loader';
+import type { CatalogEntityNeighbors } from './catalog-neighbor-groups';
 export {
   filterCatalogNeighborGroups,
   getCatalogNeighborGroups,
