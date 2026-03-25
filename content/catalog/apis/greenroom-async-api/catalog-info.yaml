@@ -1,0 +1,1 @@
+---\napiVersion: backstage.io/v1beta1\nkind: API\nmetadata:\n  name: greenroom-async-api\n  title: Greenroom AsyncAPI\n  description: AsyncAPI spec for Greenroom messaging.\n  tags: [api, asyncapi]\nspec:\n  type: asyncapi\n  owner: api-team\n  lifecycle: production\n  system: dev-portal\n  links:\n    - url: https://example.com/asyncapi.yaml\n      title: AsyncAPI spec
