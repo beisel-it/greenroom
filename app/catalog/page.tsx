@@ -9,10 +9,10 @@ export default function CatalogPage() {
     <>
       <section className="hero">
         <div className="kicker">Catalog</div>
-        <h1>Browse catalog entities by kind.</h1>
+        <h1>Backstage-native catalog entities</h1>
         <p className="muted" style={{ maxWidth: 720 }}>
-          Explore organizations, teams, systems, and components at a glance. Each card links to a detail page
-          with ownership, relationships, and documentation.
+          Explore domains, systems, components, APIs, resources, and locations. Each card links to a detail page
+          with ownership, relationships, and documentation context.
         </p>
       </section>
 

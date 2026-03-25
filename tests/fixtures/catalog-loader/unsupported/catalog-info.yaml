@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1beta1
+kind: Gadget
+metadata:
+  name: unsupported
+spec:
+  owner: platform-team
+  lifecycle: production
+  type: unknown

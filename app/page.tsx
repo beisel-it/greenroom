@@ -4,16 +4,16 @@ import { getCatalogEntities, getDocPages } from '@/lib/content';
 export default function HomePage() {
   const entities = getCatalogEntities();
   const docs = getDocPages();
-  const systems = entities.filter((e) => e.kind === 'system');
-  const components = entities.filter((e) => e.kind === 'component');
+  const systems = entities.filter((e) => e.kind === 'System');
+  const components = entities.filter((e) => e.kind === 'Component');
 
   return (
     <>
       <section className="hero">
-        <div className="kicker">TechDocs-lite + service catalog</div>
-        <h1>Lean internal developer portal for org → team → system → component.</h1>
+        <div className="kicker">TechDocs-lite + Backstage catalog</div>
+        <h1>Lean internal developer portal for domains → systems → components.</h1>
         <p className="muted">
-          Greenroom keeps the model intentionally small: markdown-first catalog entries, docs beside entities,
+          Greenroom keeps the model intentionally small: Backstage-native catalog entities, docs beside metadata,
           and Mermaid diagrams without the weight of full Backstage.
         </p>
       </section>

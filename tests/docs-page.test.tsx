@@ -38,16 +38,21 @@ describe('Docs page', () => {
 
     const markup = renderToString(element);
 
+    expect(markup).toContain('Previous');
+    expect(markup).toContain('/docs/adr/0002-entity-rendering');
+    expect(markup).toContain('0002-entity-rendering');
     expect(markup).toContain('Next');
     expect(markup).toContain('/docs/getting-started/overview');
     expect(markup).toContain('Overview');
-    expect(markup).not.toContain('docs-prev-next-link previous');
+    expect(markup).toContain('/docs/adr/0002-entity-rendering');
+    expect(markup).toContain('0002-entity-rendering');
   });
 
   it('exposes static params for docs slugs', () => {
     const params = generateStaticParams();
 
     expect(params).toEqual([
+      { slug: ['adr', '0002-entity-rendering'] },
       { slug: ['getting-started', 'contributing'] },
       { slug: ['getting-started', 'overview'] },
     ]);

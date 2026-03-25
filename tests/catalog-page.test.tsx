@@ -5,8 +5,9 @@ import { renderToString } from 'react-dom/server';
 import CatalogPage from '../app/catalog/page';
 import { CatalogGroups } from '../components/catalog-groups';
 import { deriveGroupedCatalog } from '../components/catalog-page-content';
+import { CatalogFilterControls } from '../components/catalog-filter-controls';
 import { getCatalogContent } from '../lib/content';
-import { CatalogGroupedEntities, groupCatalogEntities } from '../lib/catalog-shared';
+import { CatalogGroupedEntities, catalogKindOrder, groupCatalogEntities } from '../lib/catalog-core';
 
 vi.mock('next/link', () => {
   const Link = ({ href, children }: { href: string; children: React.ReactNode }) => (
@@ -21,51 +22,67 @@ describe('catalog index page', () => {
     const markup = renderToString(<CatalogPage />);
 
     expect(markup).toContain('Catalog');
-    expect(markup).toContain('Browse catalog entities by kind.');
+    expect(markup).toContain('Backstage-native catalog entities');
+    expect(markup).toContain('Discovery');
+    expect(markup).toContain('Open docs index');
     expect(markup).toContain('Filters');
+    expect(markup).toContain('Search');
 
-    expect(markup.indexOf('Organizations')).toBeLessThan(markup.indexOf('Teams'));
-    expect(markup.indexOf('Teams')).toBeLessThan(markup.indexOf('Systems'));
-    expect(markup.indexOf('Systems')).toBeLessThan(markup.indexOf('Components'));
+    expect(markup).toContain('Domains');
+    expect(markup).toContain('Systems');
+    expect(markup).toContain('Components');
+    expect(markup).toContain('APIs');
 
     expect(markup).toContain('Greenroom Web');
     expect(markup).toContain('Developer Portal');
-    expect(markup).toContain('Platform Team');
-    expect(markup).toContain('/catalog/greenroom-web');
-    expect(markup).toContain('/catalog/dev-portal');
-    expect(markup).toContain('/catalog/platform');
+    expect(markup).toContain('/catalog/component/default/greenroom-web');
+    expect(markup).toContain('/catalog/system/default/dev-portal');
+    expect(markup).toContain('/catalog/domain/default/developer-experience');
+    expect(markup).toContain('platform-team');
   });
 
   it('shows empty states for kinds without entities', () => {
-    const emptyGrouped: CatalogGroupedEntities = {
-      org: [],
-      team: [],
-      system: [],
-      component: [],
-    };
+    const emptyGrouped: CatalogGroupedEntities = catalogKindOrder.reduce((acc, kind) => {
+      acc[kind] = [];
+      return acc;
+    }, {} as CatalogGroupedEntities);
 
     const markup = renderToString(<CatalogGroups grouped={emptyGrouped} />);
 
-    expect(markup).toContain('No organizations yet.');
-    expect(markup).toContain('No teams yet.');
+    expect(markup).toContain('No domains yet.');
     expect(markup).toContain('No systems yet.');
     expect(markup).toContain('No components yet.');
+    expect(markup).toContain('No APIs yet.');
+    expect(markup).toContain('No resources yet.');
   });
 
-  it('applies owner, team, and tag filters before grouping and keeps empty groups visible', () => {
+  it('applies owner, tag, and kind filters before grouping', () => {
     const { entities } = getCatalogContent();
 
-    const groupedByOwner = deriveGroupedCatalog(entities, { owner: 'Platform Team' });
-    expect(groupedByOwner.org).toHaveLength(0);
-    expect(groupedByOwner.team.map((e) => e.slug)).toEqual(['platform']);
-    expect(groupedByOwner.system.map((e) => e.slug)).toEqual(['dev-portal']);
-    expect(groupedByOwner.component.map((e) => e.slug)).toEqual(['greenroom-web']);
+    const groupedByOwner = deriveGroupedCatalog(entities, { owner: 'platform-team' });
+    expect(groupedByOwner.Domain?.length).toBeGreaterThan(1);
+    expect(groupedByOwner.System?.map((e) => e.slug)).toEqual([
+      'system/default/dev-portal',
+      'system/default/release-orchestrator',
+    ]);
+    expect(groupedByOwner.Component?.map((e) => e.slug)).toContain('component/default/greenroom-web');
 
-    const groupedByTag = deriveGroupedCatalog(entities, { tag: 'portal' });
-    expect(groupedByTag.org).toHaveLength(0);
-    expect(groupedByTag.team).toHaveLength(0);
-    expect(groupedByTag.system.map((e) => e.slug)).toEqual(['dev-portal']);
-    expect(groupedByTag.component).toHaveLength(0);
+    const groupedByTag = deriveGroupedCatalog(entities, { tag: 'api' });
+    expect(groupedByTag.API?.map((e) => e.slug)).toEqual([
+      'api/default/greenroom-api',
+      'api/default/greenroom-async-api',
+      'api/default/platform-shell-api',
+    ]);
+  });
+
+  it('applies text query filters before grouping', () => {
+    const { entities } = getCatalogContent();
+
+    const groupedByQuery = deriveGroupedCatalog(entities, { query: 'release orchestrator' });
+
+    expect(groupedByQuery.System?.map((entity) => entity.slug)).toEqual([
+      'system/default/release-orchestrator',
+    ]);
   });
 
   it('clears filters back to the full grouped catalog view', () => {
@@ -75,5 +92,25 @@ describe('catalog index page', () => {
     const fullGrouped = groupCatalogEntities(entities);
 
     expect(resetGrouped).toEqual(fullGrouped);
+  });
+
+  it('renders active filters and query controls', () => {
+    const { facets } = getCatalogContent();
+    const markup = renderToString(
+      <CatalogFilterControls
+        facets={facets}
+        filters={{ query: 'portal', owner: 'platform-team' }}
+        resultCount={2}
+        totalCount={8}
+      />,
+    );
+
+    expect(markup).toContain('Search filter');
+    expect(markup).toContain('2');
+    expect(markup).toContain('8');
+    expect(markup).toContain('entities');
+    expect(markup).toContain('Search: portal');
+    expect(markup).toContain('Owner: platform-team');
+    expect(markup).toContain('Clear filters');
   });
 });

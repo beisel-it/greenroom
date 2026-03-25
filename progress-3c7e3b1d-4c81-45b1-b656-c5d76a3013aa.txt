@@ -1,0 +1,40 @@
+# Progress Log
+Run: 3c7e3b1d-4c81-45b1-b656-c5d76a3013aa
+Task: Greenroom MVP: Backstage-native catalog foundation
+
+## Codebase Patterns
+- Backstage catalog model lives in `lib/catalog-shared.ts` (types, validators, ref utils) and `lib/catalog-core.ts` (relationship derivation, facets, filters, grouping).
+- `lib/catalog-loader.ts` scans `content/catalog` for `catalog-info.yaml` files, validates via `validateCatalogEntityEnvelope`, and derives slugs from entityRefs.
+- `lib/content.ts` re-exports everything and provides `getCatalogEntities`, `getCatalogContent`, `getCatalogFacets`, and doc tree helpers.
+- Tests run with Vitest (`npm test`); typecheck with `npm run typecheck` (tsc --noEmit). vitest.config.ts requires `@vitejs/plugin-react` plugin and `include` both `tests/**` and `app/**` patterns.
+- Entity refs normalize to `Kind:namespace/name`; kinds use PascalCase (Component, API, System, Resource, Domain, Location). Default namespace is `default`. `parseEntityRef` accepts optional `{ defaultKind, defaultNamespace }` context when resolving relative refs.
+- `normalizeTarget(raw, fallbackKind)` resolves `namespace/name` patterns by prepending the fallback kind.
+- `filterCatalogEntities` supports owner, tag, tags, kind, namespace, system, domain filters (AND semantics).
+- `getCatalogFacets` returns owners, tags, kinds, namespaces, systems (as entityRefs), domains (as entityRefs).
+- `lib/catalog-core.ts` `exports catalogKindOrder` from catalog-shared. Do not re-export `CatalogKind` as value — it's a type only.
+
+---
+
+## 2026-03-24 - US-001: Backstage entity schema and ref validation (validation refinements)
+- Tightened Backstage envelope validation: apiVersion allowlist enforced, metadata.name required, and required spec fields now surface clear errors (e.g., spec.owner for API/component).
+- Entity ref parser/formatter now supports context defaults, rejects empty refs, and normalizes namespace/kind casing. Added coverage for normalization and invalid ref errors.
+- Files changed: `lib/catalog-shared.ts`, `tests/catalog-schema.test.ts`
+- Tests: `npm run build`, `npm run typecheck`, `npm test`
+- **Learnings:** Keep validation error messages specific; entity ref helpers can consume caller context to resolve relative refs consistently.
+---
+
+## 2026-03-24 - US-001: Backstage entity schema and ref validation
+- Added Backstage entity envelope validation (apiVersion allowlist, PascalCase kind normalization, metadata and spec per kind).
+- Added entity ref parser that normalizes to `Kind:namespace/name` with default namespace and kind fallback.
+- Added `catalog-loader.ts` to scan `content/catalog` for `catalog-info.yaml` files (recursive), validate each YAML document, and derive slugs.
+- Added catalog-info.yaml fixture at `content/catalog/catalog-info.yaml` with Domain, System, Component, API, Resource, Location entities.
+- Files changed: `lib/catalog-shared.ts`, `lib/catalog-loader.ts`, `tests/catalog-schema.test.ts`, `tests/catalog-loader.test.ts`, `tests/fixtures/catalog-loader/`.
+
+## 2026-03-24 - US-003 / US-005: Backstage-native content layer and catalog UI
+- Migrated `lib/content.ts` to use `catalog-core.ts` (relationship derivation, grouping, filtering, facets).
+- `lib/catalog-core.ts` derives all relationships from Backstage spec fields (domain, system, providesApis, consumesApis, dependsOn).
+- `dependsOn` tries all catalog kinds (Component, Resource, API, System, Domain, Location) when no explicit kind is given.
+- Updated all components (`catalog-groups.tsx`, `catalog-filter-controls.tsx`, `catalog-page-content.tsx`, `catalog-entity-content.tsx`) to use Backstage kinds (PascalCase).
+- Updated all tests to reflect Backstage entity model.
+- **Learnings:** `export * from` causes duplicate export errors if the same symbol is exported twice. Use named imports/exports when combining barrel files. Vitest 4.x requires `@vitejs/plugin-react` for `.tsx` files with JSX. `CatalogFacets.systems` should store full entityRefs not just names.
+---

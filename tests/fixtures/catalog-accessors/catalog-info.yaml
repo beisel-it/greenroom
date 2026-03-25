@@ -1,0 +1,85 @@
+---
+apiVersion: backstage.io/v1beta1
+kind: Domain
+metadata:
+  name: developer-experience
+  namespace: platform
+  title: Developer Experience
+  description: Platform experiences
+  tags: [platform, dx]
+spec:
+  owner: team-a
+---
+apiVersion: backstage.io/v1beta1
+kind: System
+metadata:
+  name: developer-portal
+  namespace: platform
+  title: Developer Portal
+  description: Portal system
+  tags: [portal]
+spec:
+  owner: team-a
+  domain: platform/developer-experience
+---
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: greenroom-web
+  namespace: platform
+  title: Greenroom Web
+  description: Portal frontend
+  tags: [web, frontend, portal]
+spec:
+  type: website
+  owner: team-a
+  lifecycle: production
+  system: platform/developer-portal
+  providesApis:
+    - portal-content
+  consumesApis:
+    - identity
+  dependsOn:
+    - Resource:docs/docs-repo
+---
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: marketing-site
+  namespace: default
+  title: Marketing Site
+  description: Public marketing site
+  tags: [web]
+spec:
+  type: website
+  owner: team-b
+  lifecycle: experimental
+  system: platform/developer-portal
+---
+apiVersion: backstage.io/v1beta1
+kind: API
+metadata:
+  name: portal-content
+  namespace: platform
+  title: Portal Content API
+  description: Content API
+  tags: [graphql, portal]
+spec:
+  type: graphql
+  owner: team-b
+  lifecycle: production
+  system: platform/developer-portal
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: docs-repo
+  namespace: docs
+  title: Docs Repository
+  description: Git repo for docs
+  tags: [git, content]
+spec:
+  type: repository
+  owner: team-b
+  lifecycle: production
+  system: platform/developer-portal

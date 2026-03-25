@@ -2,48 +2,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
 
+import { catalogKindOrder } from './catalog-shared';
+import { loadCatalogEntitiesFromYaml } from './catalog-loader';
+import type { LoadedCatalogEntity } from './catalog-loader';
 import {
-  CatalogEntity,
+  attachCatalogRelationships,
+  CatalogEntityWithRelationships,
   CatalogFacets,
-  CatalogGroupedEntities,
   CatalogFilters,
-  CatalogKind,
-  catalogKindOrder,
+  CatalogGroupedEntities,
+  DerivedRelationshipMaps,
+  deriveCatalogRelationships,
   filterCatalogEntities,
+  getCatalogFacets,
   groupCatalogEntities,
-} from './catalog-shared';
+} from './catalog-core';
 
 export type CatalogContent = {
   entities: CatalogEntityWithRelationships[];
   grouped: CatalogGroupedEntities;
   facets: CatalogFacets;
-  relationships: CatalogRelationships;
-};
-
-export type EntityReference = {
-  slug: string;
-  title: string;
-  kind: CatalogKind;
-};
-
-export type BrokenReference = {
-  kind: CatalogKind;
-  slug: string;
-  title: string;
-  field: 'team' | 'system';
-  target: string;
-};
-
-export type CatalogRelationships = {
-  teamSystems: Record<string, EntityReference[]>;
-  systemComponents: Record<string, EntityReference[]>;
-  brokenReferences: BrokenReference[];
-};
-
-export type CatalogEntityWithRelationships = CatalogEntity & {
-  systems: EntityReference[];
-  components: EntityReference[];
-  brokenReferences: BrokenReference[];
+  relationships: DerivedRelationshipMaps;
 };
 
 export type DocPage = {
@@ -73,7 +52,6 @@ export type DocNavItem = Omit<DocTreeNode, 'children' | 'isPage'> & {
 };
 
 const root = process.cwd();
-const catalogRoot = path.join(root, 'content', 'catalog');
 const docsRoot = path.join(root, 'content', 'docs');
 
 function walkMarkdown(dir: string): string[] {
@@ -93,158 +71,42 @@ function walkMarkdown(dir: string): string[] {
   ];
 }
 
-function uniqueSorted(values: (string | undefined)[]) {
-  return Array.from(new Set(values.filter(Boolean) as string[])).sort((a, b) =>
-    a.localeCompare(b),
-  );
-}
-
-export function getCatalogEntities(): CatalogEntity[] {
-  return walkMarkdown(catalogRoot)
-    .map((file) => {
-      const raw = fs.readFileSync(file, 'utf8');
-      const { data, content } = matter(raw);
-      return {
-        slug: String(data.slug),
-        kind: data.kind as CatalogKind,
-        title: String(data.title),
-        summary: String(data.summary ?? ''),
-        owner: data.owner ? String(data.owner) : undefined,
-        system: data.system ? String(data.system) : undefined,
-        team: data.team ? String(data.team) : undefined,
-        tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
-        path: file,
-        body: content,
-      } as CatalogEntity;
-    })
-    .sort((a, b) => a.title.localeCompare(b.title));
-}
-
-export function getCatalogFacets(entities: CatalogEntity[] = getCatalogEntities()): CatalogFacets {
-  return {
-    owners: uniqueSorted(entities.map((entity) => entity.owner)),
-    teams: uniqueSorted(entities.map((entity) => entity.team)),
-    tags: uniqueSorted(entities.flatMap((entity) => entity.tags ?? [])),
-  };
-}
-
-function normalizeKey(value: string) {
-  return value.trim().toLowerCase();
-}
-
-function buildLookup(entities: CatalogEntity[]) {
-  const bySlug = new Map<string, CatalogEntity>();
-  const byTitle = new Map<string, CatalogEntity>();
-
-  for (const entity of entities) {
-    bySlug.set(normalizeKey(entity.slug), entity);
-    byTitle.set(normalizeKey(entity.title), entity);
+export function getCatalogEntities(
+  entitiesOverride?: CatalogEntityWithRelationships[] | LoadedCatalogEntity[],
+): CatalogEntityWithRelationships[] {
+  if (entitiesOverride && entitiesOverride.length > 0) {
+    const first = entitiesOverride[0] as CatalogEntityWithRelationships;
+    const hasRelations = 'relations' in first && 'brokenReferences' in first;
+    return hasRelations
+      ? (entitiesOverride as CatalogEntityWithRelationships[])
+      : attachCatalogRelationships(entitiesOverride as LoadedCatalogEntity[]);
   }
 
-  return { bySlug, byTitle };
-}
-
-function resolveReference(value: string | undefined, lookup: ReturnType<typeof buildLookup>) {
-  if (!value) return undefined;
-  const key = normalizeKey(value);
-  return lookup.bySlug.get(key) ?? lookup.byTitle.get(key);
-}
-
-function addRelationship(map: Record<string, EntityReference[]>, key: string, ref: EntityReference) {
-  const entries = map[key] ?? [];
-  if (!entries.some((entry) => entry.slug === ref.slug)) {
-    entries.push(ref);
-  }
-  map[key] = entries;
-}
-
-const toReference = (entity: CatalogEntity): EntityReference => ({
-  slug: entity.slug,
-  title: entity.title,
-  kind: entity.kind,
-});
-
-function applyRelationshipsToEntity(
-  entity: CatalogEntity,
-  relationships: CatalogRelationships,
-): CatalogEntityWithRelationships {
-  return {
-    ...entity,
-    systems: relationships.teamSystems[entity.slug] ?? [],
-    components: relationships.systemComponents[entity.slug] ?? [],
-    brokenReferences: relationships.brokenReferences.filter((ref) => ref.slug === entity.slug),
-  };
-}
-
-export function deriveCatalogRelationships(entities: CatalogEntity[]): CatalogRelationships {
-  const teams = entities.filter((entity) => entity.kind === 'team');
-  const systems = entities.filter((entity) => entity.kind === 'system');
-  const components = entities.filter((entity) => entity.kind === 'component');
-
-  const teamLookup = buildLookup(teams);
-  const systemLookup = buildLookup(systems);
-
-  const relationships: CatalogRelationships = {
-    teamSystems: {},
-    systemComponents: {},
-    brokenReferences: [],
-  };
-
-  for (const system of systems) {
-    const resolvedTeam = resolveReference(system.team, teamLookup);
-    if (resolvedTeam) {
-      addRelationship(relationships.teamSystems, resolvedTeam.slug, toReference(system));
-    } else if (system.team) {
-      relationships.brokenReferences.push({
-        kind: system.kind,
-        slug: system.slug,
-        title: system.title,
-        field: 'team',
-        target: system.team,
-      });
-    }
-  }
-
-  for (const component of components) {
-    const resolvedSystem = resolveReference(component.system, systemLookup);
-    if (resolvedSystem) {
-      addRelationship(relationships.systemComponents, resolvedSystem.slug, toReference(component));
-    } else if (component.system) {
-      relationships.brokenReferences.push({
-        kind: component.kind,
-        slug: component.slug,
-        title: component.title,
-        field: 'system',
-        target: component.system,
-      });
-    }
-  }
-
-  return relationships;
+  return attachCatalogRelationships(loadCatalogEntitiesFromYaml());
 }
 
 export function getCatalogContent(
-  filtersOrEntities: CatalogFilters | CatalogEntity[] = {},
-  entitiesOverride?: CatalogEntity[],
+  filtersOrEntities: CatalogFilters | CatalogEntityWithRelationships[] = {},
+  entitiesOverride?: CatalogEntityWithRelationships[],
 ): CatalogContent {
   const hasEntityArrayOverride = Array.isArray(filtersOrEntities);
   const filters = hasEntityArrayOverride ? {} : filtersOrEntities;
   const allEntities = hasEntityArrayOverride
-    ? filtersOrEntities
+    ? (filtersOrEntities as CatalogEntityWithRelationships[])
     : (entitiesOverride ?? getCatalogEntities());
-  const filteredEntities = filterCatalogEntities(allEntities, filters);
-  const relationships = deriveCatalogRelationships(allEntities);
+  const filteredEntities = filterCatalogEntities(allEntities, filters as CatalogFilters);
+  const { relationships } = deriveCatalogRelationships(allEntities.map((entity) => ({ ...entity } as CatalogEntityWithRelationships)));
 
   return {
-    entities: filteredEntities.map((entity) => applyRelationshipsToEntity(entity, relationships)),
+    entities: filteredEntities,
     grouped: groupCatalogEntities(filteredEntities, catalogKindOrder),
     facets: getCatalogFacets(allEntities),
     relationships,
   };
 }
 
-export function getCatalogEntity(slug: string, entitiesOverride?: CatalogEntity[]) {
-  const { entities } = getCatalogContent(entitiesOverride);
+export function getCatalogEntity(slug: string, entitiesOverride?: CatalogEntityWithRelationships[]) {
+  const entities = entitiesOverride ?? getCatalogEntities();
   return entities.find((entity) => entity.slug === slug);
 }
 
@@ -368,3 +230,6 @@ export function getDocNavList(tree: DocTreeNode[] = getDocTree()): DocNavItem[] 
 }
 
 export * from './catalog-shared';
+export * from './catalog-loader';
+export * from './catalog-core';
+export * from './catalog-graph';

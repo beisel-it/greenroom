@@ -1,0 +1,16 @@
+---
+apiVersion: backstage.io/v1beta1
+kind: API
+metadata:
+  name: greenroom-async-api
+  title: Greenroom AsyncAPI
+  description: AsyncAPI spec for Greenroom messaging.
+  tags: [api, asyncapi]
+spec:
+  type: asyncapi
+  owner: api-team
+  lifecycle: production
+  system: dev-portal
+  links:
+    - url: https://example.com/asyncapi.yaml
+      title: AsyncAPI spec

@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: broken-entry
+  title Broken Entry
+spec:
+  owner: platform-team
+  lifecycle: production
+  type: website
