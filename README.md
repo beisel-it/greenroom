@@ -1,64 +1,95 @@
-# Greenroom
+# 🟢 Greenroom
 
-Lean Backstage-style catalog and docs app for small teams that want ownership, system context, and practical documentation without the weight of a full platform.
+Modern internal developer portal focused on Backstage-compatible `catalog-info.yaml` ingestion, fast discovery, TechDocs, MADR, relationships, relationship graphs, and Mermaid-first documentation.
 
-## ✨ What it is
+## ✨ Why Greenroom
 
-Greenroom keeps the model intentionally small:
+Greenroom is a lean, file-first alternative to a heavier Backstage installation:
 
-- **Core model:** Org → Team → System → Component
-- **Docs:** Markdown-first TechDocs-lite pages
-- **Diagrams:** Mermaid in Markdown fences
-- **Stack:** Next.js App Router + TypeScript + file-based content
+- `catalog-info.yaml` is the contract, not a side import path
+- discovery stays fast and local with in-repo content
+- TechDocs and MADR stay markdown-first
+- relationship traversal uses familiar Backstage semantics
+- Mermaid diagrams render directly inside the product
 
-The goal is simple: prove that teams can find the right owner, understand system context, and read useful docs before adding more platform machinery.
+The current target is a minimal drop-in replacement for Spotify Backstage for teams that want a modern 2026 UX without the operational weight of a larger plugin platform.
 
-## 📸 UI snapshots
+## 🧭 Current Focus
+
+- Backstage-style catalog ingestion with normalized entity references
+- catalog pages for domains, systems, components, APIs, resources, and locations
+- relationship panels, graph traversal, and graph-oriented entity navigation
+- TechDocs-lite docs with sidebar navigation and previous/next flows
+- MADR/ADR-friendly authoring
+- Mermaid diagrams with graceful fallback behavior
+
+## 🖼️ Screenshots
+
+### Home
 
 <p>
   <img src="docs/assets/readme/home.png" alt="Greenroom home page with catalog and docs overview" width="900" />
 </p>
 
-<p>
-  <img src="docs/assets/readme/catalog-entity.png" alt="Greenroom component detail page for Greenroom Web" width="900" />
-</p>
+### Catalog Entity
 
 <p>
-  <img src="docs/assets/readme/docs-page.png" alt="Greenroom documentation page rendered from Markdown" width="900" />
+  <img src="docs/assets/readme/catalog-entity.png" alt="Greenroom catalog entity page showing relationships and ownership context" width="900" />
 </p>
 
-## 🧭 Current shape
+### Docs View
 
-- Catalog home with quick counts and entry points into content
-- Entity pages for orgs, teams, systems, and components
-- Markdown docs rendered inside the app
-- Content stored in-repo for low-friction editing
+<p>
+  <img src="docs/assets/readme/docs-page.png" alt="Greenroom documentation page rendered from Markdown with docs navigation" width="900" />
+</p>
 
-## 🛠️ Local development
+## 🏗️ Product Shape
+
+Greenroom keeps the core model intentionally small:
+
+- `Org -> Team -> System -> Component`
+- plus Backstage-native `Domain`, `API`, `Resource`, and `Location` support already present in this repo
+
+Core building blocks:
+
+- Next.js App Router
+- TypeScript
+- file-based content
+- markdown docs
+- Mermaid blocks in markdown fences
+
+## 🔎 Discovery And Graphs
+
+Greenroom already exposes catalog relationships without inventing a custom DSL.
+
+`GET /api/catalog/entities/:kind/:namespace/:name/relations`
+
+The current graph surface includes:
+
+- ownership via `spec.owner`
+- containment via `spec.domain`, `spec.system`, `spec.subdomainOf`, `spec.subcomponentOf`
+- API edges via `spec.providesApis`, `spec.consumesApis`
+- dependency edges via `spec.dependsOn`, `spec.dependencyOf`
+- reverse neighbor collections for domains, systems, components, APIs, resources, providers, consumers, and dependents
+- broken reference reporting for unresolved catalog refs
+
+Catalog detail pages currently expose:
+
+- breadcrumbs for graph traversal
+- grouped neighbor cards and relation filters
+- kind-specific panels for systems, components, APIs, resources, and providers/consumers
+- broken-reference warnings when sample or real catalog content is inconsistent
+
+## 🛠️ Local Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-If port 3000 is already in use, Next.js will automatically pick the next available port.
+Open `http://localhost:3000`.
 
-## 📁 Content layout
-
-```text
-content/
-  catalog/
-    orgs/
-    teams/
-    systems/
-    components/
-  docs/
-    getting-started/
-  templates/
-```
-
-## 🚀 Useful scripts
+Useful scripts:
 
 ```bash
 npm run dev
@@ -67,45 +98,53 @@ npm run typecheck
 npm run test
 ```
 
-## Graph Relations API
+## 📁 Content Layout
 
-Greenroom exposes the existing Backstage catalog relations without adding a custom relation DSL.
-
-`GET /api/catalog/entities/:kind/:namespace/:name/relations`
-
-Response shape:
-
-- `entity`: canonical entity reference metadata for the requested node
-- `neighbors.owner`: owner group derived from `spec.owner`
-- `neighbors.domain`, `neighbors.parentDomain`, `neighbors.system`, `neighbors.parentComponent`: direct `partOf` links derived from Backstage catalog fields
-- `neighbors.providesApis`, `neighbors.consumesApis`, `neighbors.dependsOn`: direct neighbor links from catalog refs
-- `neighbors.dependents`, `neighbors.systemsInDomain`, `neighbors.subdomains`, `neighbors.componentsInSystem`, `neighbors.subcomponents`, `neighbors.apisInSystem`, `neighbors.resourcesInSystem`, `neighbors.providingComponents`, `neighbors.consumingComponents`: reverse neighbor collections derived from the same catalog relations
-- `brokenReferences`: unresolved catalog refs for the requested entity
-
-Unknown entities return `404` with:
-
-```json
-{ "error": "Catalog entity not found", "slug": "component/default/missing" }
+```text
+content/
+  catalog/
+    orgs/
+    teams/
+    systems/
+    apis/
+    docs/
+  docs/
+  templates/
 ```
 
-## Catalog Graph Navigation
+## 🗺️ Roadmap
 
-Use `/catalog` to browse domains, systems, components, APIs, resources, and locations. Each entity card links to `/catalog/:kind/:namespace/:name`, where the detail page exposes:
+Near-term feature stories from [docs/roadmap/feature-dev-stories.md](/home/florian/.openclaw/workspace/greenroom/docs/roadmap/feature-dev-stories.md):
 
-- `Catalog path` breadcrumbs for domain → system → component traversal when those relations exist
-- `Neighbors` cards grouped into toggleable relation filters for `Ownership`, `Part Of`, `Depends On`, `Provides / Consumes API`, and `System / Domain`
-- kind-specific panels such as `Systems in domain`, `Components`, `APIs`, `Resources`, `Providing components`, and `Consuming components`
-- `Broken references` warnings when catalog refs cannot be resolved from the loaded entities
+- `US-001` Catalog schema and validation
+- `US-002` Catalog index and facet filters
+- `US-003` Entity relationship panels
+- `US-004` Docs navigation shell
+- `US-005` Mermaid-safe rendering pipeline
+- `US-006` Search across entities and docs
+- `US-007` Seed org-level content and contributor templates
 
-The supported graph links come from standard Backstage fields:
+Active MVP framing from [docs/roadmap/mvp-cycle-001.md](/home/florian/.openclaw/workspace/greenroom/docs/roadmap/mvp-cycle-001.md):
 
-- ownership: `spec.owner`
-- containment: `spec.domain`, `spec.system`, `spec.subdomainOf`, `spec.subcomponentOf`
-- API edges: `spec.providesApis`, `spec.consumesApis`
-- dependency edges: `spec.dependsOn`, `spec.dependencyOf`
+- discovery-first catalog experience
+- TechDocs and MADR as first-class content
+- relationship graph and Mermaid-backed architecture views
+- strong tests and fast local iteration
 
-No additional runtime flags are required. The default in-repo catalog content is enough for the API and navigation UI to work locally.
+## 🚧 Explicit Non-Goals For This Cycle
 
-## 🗺️ Near-term roadmap
+- full Backstage plugin parity
+- database-backed ingestion or search infrastructure
+- scaffolder execution and workflow engines
+- infrastructure inventory and enterprise tenancy layers
 
-See `docs/roadmap/feature-dev-stories.md` and the Antfarm backlog entries for planned work.
+## 🤝 Authoring Model
+
+Greenroom favors low-friction repo-native authoring:
+
+- edit markdown
+- edit `catalog-info.yaml`
+- commit changes
+- preview locally
+
+That keeps adoption simple while still supporting ownership, system context, architecture notes, and diagrams in one place.
