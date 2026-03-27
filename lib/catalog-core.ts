@@ -1,5 +1,6 @@
 import {
   CatalogKind,
+  CatalogLifecycle,
   catalogKindOrder,
   DomainSpec,
   DEFAULT_ENTITY_NAMESPACE,
@@ -63,6 +64,7 @@ export type CatalogEntityWithRelationships = LoadedCatalogEntity & {
   summary: string;
   relations: EntityRelationships;
   brokenReferences: BrokenReference[];
+  discovery?: CatalogEntityDiscoverySignals;
 };
 
 export type CatalogFacets = {
@@ -72,6 +74,7 @@ export type CatalogFacets = {
   namespaces: string[];
   systems: string[];
   domains: string[];
+  lifecycles: string[];
 };
 
 export type CatalogGroupedEntities = Partial<Record<CatalogKind, CatalogEntityWithRelationships[]>>;
@@ -84,6 +87,54 @@ export type CatalogFilters = {
   kind?: CatalogKind;
   namespace?: string;
   system?: string;
+  domain?: string;
+  lifecycle?: string;
+};
+
+export type CatalogEntityDiscoverySignals = {
+  owner?: string;
+  lifecycle?: string;
+  system?: EntityReference;
+  domain?: EntityReference;
+  linkCount: number;
+  docsLinkCount: number;
+  adrLinkCount: number;
+  specLinkCount: number;
+  relationCount: number;
+  apiRelationCount: number;
+  dependencyCount: number;
+  hierarchyCount: number;
+  brokenReferenceCount: number;
+  metadataDensityScore: number;
+  relationRichnessScore: number;
+  documentationScore: number;
+  rankScore: number;
+};
+
+export type CatalogDiscoveryGroupBy =
+  | 'kind'
+  | 'owner'
+  | 'system'
+  | 'domain'
+  | 'lifecycle';
+
+export type CatalogDiscoverySort =
+  | 'rank'
+  | 'docs-richness'
+  | 'relation-richness'
+  | 'broken-first';
+
+export type CatalogDiscoveryGroup = {
+  groupBy: CatalogDiscoveryGroupBy;
+  key: string;
+  label: string;
+  entities: CatalogEntityWithRelationships[];
+};
+
+export type CatalogDiscoveryModel = {
+  sort: CatalogDiscoverySort;
+  rankedEntities: CatalogEntityWithRelationships[];
+  groups: Record<CatalogDiscoveryGroupBy, CatalogDiscoveryGroup[]>;
 };
 
 export type CatalogRelationType =
@@ -179,6 +230,121 @@ function emptyRelations(): EntityRelationships {
     providingComponents: [],
     consumingComponents: [],
   };
+}
+
+function getEntityLifecycle(entity: LoadedCatalogEntity): string | undefined {
+  const lifecycle = (entity.spec as { lifecycle?: CatalogLifecycle | string }).lifecycle;
+  return lifecycle?.trim() || undefined;
+}
+
+function countUniqueReferences(relations: EntityRelationships) {
+  const refs = new Set<string>();
+
+  [
+    relations.owner,
+    relations.domain,
+    relations.parentDomain,
+    relations.system,
+    relations.parentComponent,
+  ]
+    .filter((ref): ref is EntityReference => Boolean(ref))
+    .forEach((ref) => refs.add(ref.entityRef));
+
+  [
+    relations.providesApis,
+    relations.consumesApis,
+    relations.dependsOn,
+    relations.dependents,
+    relations.systemsInDomain,
+    relations.subdomains,
+    relations.componentsInSystem,
+    relations.subcomponents,
+    relations.apisInSystem,
+    relations.resourcesInSystem,
+    relations.providingComponents,
+    relations.consumingComponents,
+  ].forEach((entries) => {
+    entries.forEach((ref) => refs.add(ref.entityRef));
+  });
+
+  return refs.size;
+}
+
+function getDiscoverySignals(
+  entity: LoadedCatalogEntity,
+  relations: EntityRelationships,
+  broken: BrokenReference[],
+): CatalogEntityDiscoverySignals {
+  const owner = (entity.spec as { owner?: string }).owner;
+  const lifecycle = getEntityLifecycle(entity);
+  const links = entity.metadata.links ?? [];
+  const docsLinkCount = links.filter((link) => link.type === 'docs' || link.url.startsWith('/docs')).length;
+  const adrLinkCount = links.filter((link) => link.type === 'adr' || link.url.includes('/adr/')).length;
+  const specLinkCount = links.filter((link) => {
+    const title = (link.title ?? '').toLowerCase();
+    return link.type === 'spec' || title.includes('spec') || link.url.endsWith('.yaml') || link.url.endsWith('.json');
+  }).length;
+
+  const apiRelationCount =
+    relations.providesApis.length +
+    relations.consumesApis.length +
+    relations.apisInSystem.length +
+    relations.providingComponents.length +
+    relations.consumingComponents.length;
+  const dependencyCount = relations.dependsOn.length + relations.dependents.length;
+  const hierarchyCount =
+    relations.systemsInDomain.length +
+    relations.subdomains.length +
+    relations.componentsInSystem.length +
+    relations.subcomponents.length +
+    relations.resourcesInSystem.length +
+    (relations.domain ? 1 : 0) +
+    (relations.parentDomain ? 1 : 0) +
+    (relations.system ? 1 : 0) +
+    (relations.parentComponent ? 1 : 0);
+  const relationCount = countUniqueReferences(relations);
+  const brokenReferenceCount = broken.length;
+
+  const metadataDensityScore =
+    (entity.metadata.description ? 2 : 0) +
+    ((entity.metadata.tags?.length ?? 0) > 0 ? 1 : 0) +
+    (owner ? 2 : 0) +
+    (lifecycle ? 2 : 0) +
+    (relations.system ? 2 : 0) +
+    (relations.domain ? 1 : 0) +
+    (links.length > 0 ? Math.min(links.length, 3) : 0);
+
+  const documentationScore = docsLinkCount * 3 + adrLinkCount * 2 + specLinkCount * 2;
+  const relationRichnessScore = relationCount + apiRelationCount + dependencyCount + hierarchyCount;
+  const rankScore =
+    brokenReferenceCount * 100 +
+    documentationScore * 10 +
+    relationRichnessScore * 4 +
+    metadataDensityScore * 3;
+
+  return {
+    owner,
+    lifecycle,
+    system: relations.system,
+    domain: relations.domain,
+    linkCount: links.length,
+    docsLinkCount,
+    adrLinkCount,
+    specLinkCount,
+    relationCount,
+    apiRelationCount,
+    dependencyCount,
+    hierarchyCount,
+    brokenReferenceCount,
+    metadataDensityScore,
+    relationRichnessScore,
+    documentationScore,
+    rankScore,
+  };
+}
+
+function ensureDiscoverySignals(entity: CatalogEntityWithRelationships): CatalogEntityDiscoverySignals {
+  return entity.discovery ?? getDiscoverySignals(entity, entity.relations, entity.brokenReferences);
 }
 
 /**
@@ -460,6 +626,7 @@ function withPresentation(entity: LoadedCatalogEntity, relations: EntityRelation
     summary: entity.metadata.description ?? '',
     relations,
     brokenReferences: broken,
+    discovery: getDiscoverySignals(entity, relations, broken),
   } satisfies CatalogEntityWithRelationships;
 }
 
@@ -551,8 +718,10 @@ export function getCatalogFacets(entities: CatalogEntityWithRelationships[]): Ca
   const tags = new Set<string>();
   const namespaces = new Set<string>();
   const systems = new Set<string>();
+  const lifecycles = new Set<string>();
 
   entities.forEach((entity) => {
+    const discovery = ensureDiscoverySignals(entity);
     if ('owner' in entity.spec && (entity.spec as { owner?: string }).owner) {
       owners.add((entity.spec as { owner?: string }).owner as string);
     }
@@ -560,6 +729,7 @@ export function getCatalogFacets(entities: CatalogEntityWithRelationships[]): Ca
     namespaces.add((entity.metadata.namespace ?? DEFAULT_ENTITY_NAMESPACE).toLowerCase());
 
     if (entity.kind === 'System') systems.add(entity.entityRef);
+    if (discovery.lifecycle) lifecycles.add(discovery.lifecycle);
   });
 
   return {
@@ -569,6 +739,7 @@ export function getCatalogFacets(entities: CatalogEntityWithRelationships[]): Ca
     namespaces: Array.from(namespaces).sort(),
     systems: Array.from(systems).sort(),
     domains: Array.from(entities.filter((e) => e.kind === 'Domain').map((e) => e.entityRef)).sort(),
+    lifecycles: Array.from(lifecycles).sort(),
   } satisfies CatalogFacets;
 }
 
@@ -593,6 +764,8 @@ export function filterCatalogEntities(
   };
 
   const wantedSystem = filters.system ? normalizeTargetRef(filters.system, 'System') : undefined;
+  const wantedDomain = filters.domain ? normalizeTargetRef(filters.domain, 'Domain') : undefined;
+  const wantedLifecycle = filters.lifecycle?.toLowerCase();
 
   return entities.filter((entity) => {
     const matchesOwner = filters.owner ? ('owner' in entity.spec ? (entity.spec as { owner?: string }).owner === filters.owner : false) : true;
@@ -603,6 +776,10 @@ export function filterCatalogEntities(
 
     const entitySystemRef = entity.kind === 'System' ? entity.entityRef : entity.relations.system?.entityRef;
     const matchesSystem = wantedSystem ? entitySystemRef === wantedSystem : true;
+    const entityDomainRef = entity.kind === 'Domain' ? entity.entityRef : entity.relations.domain?.entityRef;
+    const discovery = ensureDiscoverySignals(entity);
+    const matchesDomain = wantedDomain ? entityDomainRef === wantedDomain : true;
+    const matchesLifecycle = wantedLifecycle ? discovery.lifecycle?.toLowerCase() === wantedLifecycle : true;
 
     const entityTags = entity.metadata.tags ?? [];
     const matchesTags =
@@ -616,16 +793,57 @@ export function filterCatalogEntities(
         entity.entityRef,
         entity.kind,
         (entity.spec as { owner?: string }).owner,
+        discovery.lifecycle,
         entity.relations.domain?.title,
         entity.relations.system?.title,
+        ...(entity.metadata.links ?? []).map((link) => link.title ?? link.url),
         ...entityTags,
       ]
         .filter((value): value is string => Boolean(value))
         .some((value) => value.toLowerCase().includes(normalizedQuery))
       : true;
 
-    return matchesOwner && matchesKind && matchesNamespace && matchesSystem && matchesTags && matchesQuery;
+    return matchesOwner && matchesKind && matchesNamespace && matchesSystem && matchesDomain && matchesLifecycle && matchesTags && matchesQuery;
   });
+}
+
+function compareDiscoveryRank(
+  left: CatalogEntityWithRelationships,
+  right: CatalogEntityWithRelationships,
+  sort: CatalogDiscoverySort,
+) {
+  const leftDiscovery = ensureDiscoverySignals(left);
+  const rightDiscovery = ensureDiscoverySignals(right);
+  const leftBroken = leftDiscovery.brokenReferenceCount;
+  const rightBroken = rightDiscovery.brokenReferenceCount;
+
+  if (sort === 'broken-first' || sort === 'rank') {
+    if (rightBroken !== leftBroken) return rightBroken - leftBroken;
+  }
+
+  const sortField =
+    sort === 'docs-richness'
+      ? 'documentationScore'
+      : sort === 'relation-richness'
+        ? 'relationRichnessScore'
+        : 'rankScore';
+
+  const leftScore = leftDiscovery[sortField];
+  const rightScore = rightDiscovery[sortField];
+  if (rightScore !== leftScore) return rightScore - leftScore;
+
+  const leftLifecycle = leftDiscovery.lifecycle === 'production' ? 1 : 0;
+  const rightLifecycle = rightDiscovery.lifecycle === 'production' ? 1 : 0;
+  if (rightLifecycle !== leftLifecycle) return rightLifecycle - leftLifecycle;
+
+  return left.title.localeCompare(right.title);
+}
+
+export function rankCatalogEntities(
+  entities: CatalogEntityWithRelationships[],
+  sort: CatalogDiscoverySort = 'rank',
+): CatalogEntityWithRelationships[] {
+  return [...entities].sort((left, right) => compareDiscoveryRank(left, right, sort));
 }
 
 export function groupCatalogEntities(
@@ -641,6 +859,87 @@ export function groupCatalogEntities(
     acc[entity.kind]?.push(entity);
     return acc;
   }, { ...initial });
+}
+
+function buildDiscoveryGroups(
+  entities: CatalogEntityWithRelationships[],
+  groupBy: CatalogDiscoveryGroupBy,
+  sort: CatalogDiscoverySort,
+): CatalogDiscoveryGroup[] {
+  const groups = new Map<string, CatalogDiscoveryGroup>();
+
+  const assign = (entity: CatalogEntityWithRelationships, key: string, label: string) => {
+    const group = groups.get(key) ?? {
+      groupBy,
+      key,
+      label,
+      entities: [],
+    };
+    group.entities.push(entity);
+    groups.set(key, group);
+  };
+
+  rankCatalogEntities(entities, sort).forEach((entity) => {
+    const discovery = ensureDiscoverySignals(entity);
+
+    switch (groupBy) {
+      case 'kind':
+        assign(entity, entity.kind, entity.kind);
+        break;
+      case 'owner':
+        assign(entity, discovery.owner ?? '__unowned__', discovery.owner ?? 'Unowned');
+        break;
+      case 'system':
+        assign(
+          entity,
+          discovery.system?.entityRef ?? '__no-system__',
+          discovery.system?.title ?? 'No system',
+        );
+        break;
+      case 'domain':
+        assign(
+          entity,
+          discovery.domain?.entityRef ?? '__no-domain__',
+          discovery.domain?.title ?? 'No domain',
+        );
+        break;
+      case 'lifecycle':
+        assign(
+          entity,
+          discovery.lifecycle ?? '__no-lifecycle__',
+          discovery.lifecycle ?? 'No lifecycle',
+        );
+        break;
+    }
+  });
+
+  return Array.from(groups.values()).sort((left, right) => {
+    if (groupBy === 'kind') {
+      return catalogKindOrder.indexOf(left.key as CatalogKind) - catalogKindOrder.indexOf(right.key as CatalogKind);
+    }
+    if (left.key.startsWith('__') && !right.key.startsWith('__')) return 1;
+    if (!left.key.startsWith('__') && right.key.startsWith('__')) return -1;
+    return left.label.localeCompare(right.label);
+  });
+}
+
+export function buildCatalogDiscoveryModel(
+  entities: CatalogEntityWithRelationships[],
+  sort: CatalogDiscoverySort = 'rank',
+): CatalogDiscoveryModel {
+  const rankedEntities = rankCatalogEntities(entities, sort);
+
+  return {
+    sort,
+    rankedEntities,
+    groups: {
+      kind: buildDiscoveryGroups(entities, 'kind', sort),
+      owner: buildDiscoveryGroups(entities, 'owner', sort),
+      system: buildDiscoveryGroups(entities, 'system', sort),
+      domain: buildDiscoveryGroups(entities, 'domain', sort),
+      lifecycle: buildDiscoveryGroups(entities, 'lifecycle', sort),
+    },
+  };
 }
 
 export { catalogKindOrder } from './catalog-shared';

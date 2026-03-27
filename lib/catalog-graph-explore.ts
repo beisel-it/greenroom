@@ -1,5 +1,5 @@
 import type { CatalogEntityWithRelationships, EntityReference } from './catalog-core';
-import { getCatalogNeighborGroups, type CatalogNeighborGroupKey } from './catalog-graph-ui';
+import { getCatalogNeighborGroups, type CatalogNeighborGroupKey } from './catalog-neighbor-groups';
 
 export type CatalogDiagramEntity = Pick<
   CatalogEntityWithRelationships,

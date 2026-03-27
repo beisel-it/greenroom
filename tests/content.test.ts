@@ -22,6 +22,7 @@ describe('catalog content helpers', () => {
     expect(empty.kinds).toEqual(catalogKindOrder.slice());
     expect(empty.namespaces).toEqual([]);
     expect(empty.systems).toEqual([]);
+    expect(empty.lifecycles).toEqual([]);
   });
 
   it('collects unique owners, tags, and kinds', () => {
@@ -41,6 +42,7 @@ describe('catalog content helpers', () => {
     expect(facets.namespaces).toEqual(['default', 'platform']);
     expect(facets.systems).toContain('System:default/dev-portal');
     expect(facets.systems).toContain('System:default/release-orchestrator');
+    expect(facets.lifecycles).toEqual(['production']);
   });
 
   it('groups entities by kind with stable ordering and empty lists', () => {
@@ -146,6 +148,34 @@ describe('catalog content helpers', () => {
     expect(catalog.facets.owners).toEqual(['api-team', 'platform-team']);
     expect(catalog.facets.tags).toContain('portal');
     expect(catalog.facets.systems).toContain('System:default/dev-portal');
+    expect(catalog.discovery.groups.owner.find((group) => group.key === 'platform-team')?.entities.length).toBeGreaterThan(1);
+    expect(catalog.discovery.groups.lifecycle.find((group) => group.key === 'production')?.entities.length).toBeGreaterThan(1);
+  });
+
+  it('derives discovery signals and ranked grouping pivots for desktop comparison', () => {
+    const catalog = getCatalogContent({}, entities);
+    const greenroomWeb = catalog.entities.find((entity) => entity.slug === 'component/default/greenroom-web');
+    expect(greenroomWeb?.discovery).toBeDefined();
+
+    const rankedScores = catalog.discovery.rankedEntities.map((entity) => {
+      expect(entity.discovery).toBeDefined();
+      return entity.discovery!.rankScore;
+    });
+
+    expect(greenroomWeb?.discovery?.owner).toBe('platform-team');
+    expect(greenroomWeb?.discovery?.lifecycle).toBe('production');
+    expect(greenroomWeb?.discovery?.system?.entityRef).toBe('System:default/dev-portal');
+    expect(greenroomWeb?.discovery?.docsLinkCount).toBeGreaterThan(0);
+    expect(greenroomWeb?.discovery?.relationCount).toBeGreaterThan(0);
+    expect(greenroomWeb?.discovery?.rankScore).toBeGreaterThan(0);
+    expect(rankedScores).toEqual([...rankedScores].sort((left, right) => right - left));
+    expect(catalog.discovery.groups.kind.map((group) => group.key)).toEqual(catalogKindOrder);
+    expect(catalog.discovery.groups.owner.find((group) => group.key === 'platform-team')?.entities.map((entity) => entity.slug)).toContain(
+      'component/default/greenroom-web',
+    );
+    expect(catalog.discovery.groups.system.find((group) => group.key === 'System:default/dev-portal')?.entities.map((entity) => entity.slug)).toContain(
+      'component/default/greenroom-web',
+    );
   });
 
   it('loads catalog entities from catalog-info.yaml fixtures', () => {

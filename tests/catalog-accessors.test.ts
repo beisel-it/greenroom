@@ -30,12 +30,14 @@ describe('catalog accessors facets and filters', () => {
 
   it('builds unique sorted facets for owners, tags, kinds', () => {
     const entities = loadFixtureCatalog();
-    const { facets } = getCatalogContent(entities);
+    const { facets, discovery } = getCatalogContent(entities);
 
     expect(facets.owners).toEqual(['team-a', 'team-b']);
     expect(facets.tags).toContain('web');
     expect(facets.tags).toContain('portal');
     expect(facets.kinds).toEqual([...catalogKindOrder]);
+    expect(facets.lifecycles).toEqual(['experimental', 'production']);
+    expect(discovery.groups.owner.find((group) => group.key === 'team-a')?.entities.length).toBeGreaterThan(0);
   });
 
   it('applies AND semantics across owner, kind, and tag filters', () => {
