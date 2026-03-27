@@ -4,7 +4,7 @@ import { GET } from './route';
 
 describe('catalog relations API route', () => {
   it('returns neighbor relations for a known entity slug', async () => {
-    const response = await GET(new Request('http://localhost/api/catalog/entities/component/default/greenroom-web/relations'), {
+    const response = await GET(new Request('http://localhost/api/catalog/entities/relations/component/default/greenroom-web'), {
       params: Promise.resolve({ slug: ['component', 'default', 'greenroom-web'] }),
     });
 
@@ -20,7 +20,7 @@ describe('catalog relations API route', () => {
   });
 
   it('returns a clear 404 payload for an unknown entity slug', async () => {
-    const response = await GET(new Request('http://localhost/api/catalog/entities/component/default/missing/relations'), {
+    const response = await GET(new Request('http://localhost/api/catalog/entities/relations/component/default/missing'), {
       params: Promise.resolve({ slug: ['component', 'default', 'missing'] }),
     });
 

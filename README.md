@@ -71,7 +71,7 @@ npm run test
 
 Greenroom exposes the existing Backstage catalog relations without adding a custom relation DSL.
 
-`GET /api/catalog/entities/:kind/:namespace/:name/relations`
+`GET /api/catalog/entities/relations/:kind/:namespace/:name`
 
 Response shape:
 

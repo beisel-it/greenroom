@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import type { CatalogEntityWithRelationships } from '@/lib/content';
+import type { CatalogEntityWithRelationships } from '@/lib/catalog-core';
 import {
   filterCatalogNeighborGroups,
   getCatalogNeighborGroups,
   type CatalogNeighborGroupKey,
-} from '@/lib/catalog-graph';
+} from '@/lib/catalog-graph-ui';
 
 type CatalogEntityNeighborsProps = {
   entity: CatalogEntityWithRelationships;
