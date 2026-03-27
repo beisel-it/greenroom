@@ -237,16 +237,17 @@ describe('docs navigation helpers', () => {
     const tree = getDocTree();
 
     expect(tree.map((node) => node.slug)).toEqual(['adr', 'getting-started']);
-    expect(tree[0].title).toBe('Adr');
+    expect(tree[0].title).toBe('ADR');
     expect(tree[0].children.map((child) => child.slug)).toEqual([
       'adr/0002-entity-rendering',
+      'adr/0003-greenroom-self-documentation',
     ]);
     expect(tree[1].title).toBe('Getting Started');
     expect(tree[1].children.map((child) => child.slug)).toEqual([
       'getting-started/contributing',
       'getting-started/overview',
     ]);
-    expect(tree[1].children[0].summary).toContain('Markdown');
+    expect(tree[1].children[0].summary).toContain('Greenroom');
     expect(tree[1].children[1].title).toBe('Overview');
   });
 
@@ -255,15 +256,16 @@ describe('docs navigation helpers', () => {
 
     expect(nav.map((item) => item.slug)).toEqual([
       'adr/0002-entity-rendering',
+      'adr/0003-greenroom-self-documentation',
       'getting-started/contributing',
       'getting-started/overview',
     ]);
 
     expect(nav[0].previous).toBeUndefined();
     expect(nav[0].next).toEqual({
-      slug: 'getting-started/contributing',
-      title: 'Contributing content',
-      slugParts: ['getting-started', 'contributing'],
+      slug: 'adr/0003-greenroom-self-documentation',
+      title: '0003-greenroom-self-documentation',
+      slugParts: ['adr', '0003-greenroom-self-documentation'],
     });
 
     expect(nav[1].previous).toEqual({
@@ -272,16 +274,27 @@ describe('docs navigation helpers', () => {
       slugParts: ['adr', '0002-entity-rendering'],
     });
     expect(nav[1].next).toEqual({
+      slug: 'getting-started/contributing',
+      title: 'Contributing content',
+      slugParts: ['getting-started', 'contributing'],
+    });
+
+    expect(nav[2].previous).toEqual({
+      slug: 'adr/0003-greenroom-self-documentation',
+      title: '0003-greenroom-self-documentation',
+      slugParts: ['adr', '0003-greenroom-self-documentation'],
+    });
+    expect(nav[2].next).toEqual({
       slug: 'getting-started/overview',
       title: 'Overview',
       slugParts: ['getting-started', 'overview'],
     });
 
-    expect(nav[2].previous).toEqual({
+    expect(nav[3].previous).toEqual({
       slug: 'getting-started/contributing',
       title: 'Contributing content',
       slugParts: ['getting-started', 'contributing'],
     });
-    expect(nav[2].next).toBeUndefined();
+    expect(nav[3].next).toBeUndefined();
   });
 });

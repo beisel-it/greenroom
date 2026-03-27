@@ -31,6 +31,7 @@ describe('DocsSidebar', () => {
 
     const markup = renderToString(<DocsSidebar tree={tree} />);
 
+    expect(markup).toContain('ADR');
     expect(markup).toContain('Getting Started');
     expect(markup).toContain('/docs/getting-started/contributing');
     expect(markup).toContain('/docs/getting-started/overview');

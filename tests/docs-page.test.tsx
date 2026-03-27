@@ -39,8 +39,8 @@ describe('Docs page', () => {
     const markup = renderToString(element);
 
     expect(markup).toContain('Previous');
-    expect(markup).toContain('/docs/adr/0002-entity-rendering');
-    expect(markup).toContain('0002-entity-rendering');
+    expect(markup).toContain('/docs/adr/0003-greenroom-self-documentation');
+    expect(markup).toContain('0003-greenroom-self-documentation');
     expect(markup).toContain('Next');
     expect(markup).toContain('/docs/getting-started/overview');
     expect(markup).toContain('Overview');
@@ -51,6 +51,7 @@ describe('Docs page', () => {
 
     expect(params).toEqual([
       { slug: ['adr', '0002-entity-rendering'] },
+      { slug: ['adr', '0003-greenroom-self-documentation'] },
       { slug: ['getting-started', 'contributing'] },
       { slug: ['getting-started', 'overview'] },
     ]);
