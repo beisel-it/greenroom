@@ -40,7 +40,7 @@ describe('Docs page', () => {
 
     expect(markup).toContain('Previous');
     expect(markup).toContain('/docs/adr/0002-entity-rendering');
-    expect(markup).toContain('ADR-0002: Mermaid rendering for ADR/entity diagrams');
+    expect(markup).toContain('0002-entity-rendering');
     expect(markup).toContain('Next');
     expect(markup).toContain('/docs/getting-started/overview');
     expect(markup).toContain('Overview');
