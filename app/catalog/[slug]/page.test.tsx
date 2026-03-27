@@ -85,6 +85,7 @@ describe('CatalogEntityContent relationships', () => {
     expect(html).toContain('System / Domain');
     expect(html).toContain('Provides / Consumes API');
     expect(html).toContain('Depends On');
+    expect(html).toContain('Relationship diagram');
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('/catalog/system/default/dev-portal');
     expect(html).toContain('/catalog/api/default/platform-shell-api');
@@ -94,6 +95,10 @@ describe('CatalogEntityContent relationships', () => {
   it('renders linked systems for domain entities', () => {
     const html = render({
       ...baseEntity,
+      metadata: {
+        ...baseEntity.metadata,
+        links: [{ url: 'https://example.com/docs/domain', title: 'Domain runbook' }],
+      },
       relations: {
         ...baseRelations,
         systemsInDomain: [
@@ -107,6 +112,9 @@ describe('CatalogEntityContent relationships', () => {
     expect(html).toContain('/catalog/system/default/dev-portal');
     expect(html).toContain('Developer Portal');
     expect(html).toContain('/catalog/system/default/payments-core');
+    expect(html).toContain('References');
+    expect(html).toContain('Domain runbook');
+    expect(html).toContain('Browse docs');
   });
 
   it('shows an empty state for a domain with no systems', () => {

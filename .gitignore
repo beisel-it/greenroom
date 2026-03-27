@@ -30,3 +30,14 @@ yarn-error.log*
 __pycache__/
 
 workflow-state/
+!workflow-state/
+workflow-state/*
+!workflow-state/projects/
+workflow-state/projects/*
+!workflow-state/projects/greenroom/
+workflow-state/projects/greenroom/*
+!workflow-state/projects/greenroom/backlog/
+workflow-state/projects/greenroom/backlog/*
+!workflow-state/projects/greenroom/backlog/B-GREENROOM-CORE-001.json
+.clawteam-data/
+.clawteam-data

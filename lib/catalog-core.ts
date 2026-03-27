@@ -77,6 +77,7 @@ export type CatalogFacets = {
 export type CatalogGroupedEntities = Partial<Record<CatalogKind, CatalogEntityWithRelationships[]>>;
 
 export type CatalogFilters = {
+  query?: string;
   owner?: string;
   tag?: string;
   tags?: string[];
@@ -581,6 +582,7 @@ export function filterCatalogEntities(
   filters: CatalogFilters = {},
 ): CatalogEntityWithRelationships[] {
   const requestedTags = normalizeTags(filters);
+  const normalizedQuery = filters.query?.trim().toLowerCase();
 
   const normalizeTargetRef = (val: string, kind: CatalogKind) => {
     const hasKind = val.includes(':');
@@ -606,7 +608,23 @@ export function filterCatalogEntities(
     const matchesTags =
       requestedTags.length === 0 || requestedTags.every((tag) => entityTags.includes(tag));
 
-    return matchesOwner && matchesKind && matchesNamespace && matchesSystem && matchesTags;
+    const matchesQuery = normalizedQuery
+      ? [
+        entity.title,
+        entity.metadata.name,
+        entity.metadata.description,
+        entity.entityRef,
+        entity.kind,
+        (entity.spec as { owner?: string }).owner,
+        entity.relations.domain?.title,
+        entity.relations.system?.title,
+        ...entityTags,
+      ]
+        .filter((value): value is string => Boolean(value))
+        .some((value) => value.toLowerCase().includes(normalizedQuery))
+      : true;
+
+    return matchesOwner && matchesKind && matchesNamespace && matchesSystem && matchesTags && matchesQuery;
   });
 }
 

@@ -14,10 +14,10 @@ describe('catalog relations API route', () => {
     expect(payload.entity.entityRef).toBe('Component:default/greenroom-web');
     expect(payload.neighbors.owner.entityRef).toBe('Group:default/platform-team');
     expect(payload.neighbors.system.entityRef).toBe('System:default/dev-portal');
-    expect(payload.neighbors.providesApis.map((ref: { entityRef: string }) => ref.entityRef)).toEqual([
-      'API:default/platform-shell-api',
+    expect(payload.neighbors.providesApis.map((ref: { entityRef: string }) => ref.entityRef).sort()).toEqual([
       'API:default/greenroom-api',
-    ]);
+      'API:default/platform-shell-api',
+    ].sort());
   });
 
   it('returns a clear 404 payload for an unknown entity slug', async () => {

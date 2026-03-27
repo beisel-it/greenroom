@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import type { BrokenReference, CatalogEntityWithRelationships, EntityReference } from '@/lib/content';
+import { CatalogEntityGraph } from './catalog-entity-graph';
 import { CatalogEntityNeighbors } from './catalog-entity-neighbors';
 import { Markdown } from './markdown';
 
@@ -15,6 +16,24 @@ type BreadcrumbItem = {
   title: string;
   href?: string;
 };
+
+function ExternalLinksPanel({ links }: { links: Array<{ url: string; title?: string; icon?: string }> }) {
+  if (links.length === 0) return null;
+
+  return (
+    <div className="card">
+      <div className="kicker">References</div>
+      <div className="list" style={{ marginTop: 12 }}>
+        {links.map((link) => (
+          <a key={`${link.url}:${link.title ?? ''}`} href={link.url} className="entity-link" target="_blank" rel="noreferrer">
+            <strong>{link.title ?? link.url}</strong>
+            <p className="muted" style={{ marginBottom: 0 }}>{link.url}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function RelationshipPanel({ title, entities, emptyMessage }: RelationshipPanelProps) {
   return (
@@ -123,8 +142,9 @@ export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRela
   const system = relations.system?.title ?? relations.system?.entityRef;
   const domain = relations.domain?.title ?? relations.domain?.entityRef;
   const breadcrumbs = getExplorerBreadcrumbs(entity);
+  const metadataLinks = entity.metadata.links ?? [];
 
-  const showBody = Boolean(entity.summary || entity.metadata.description || entity.metadata.links?.length);
+  const showBody = Boolean(entity.summary || entity.metadata.description);
 
   return (
     <section className="panel">
@@ -146,9 +166,21 @@ export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRela
         <SummaryCard label="System" value={system} />
       </div>
 
+      <div className="catalog-entity-actions">
+        <Link href="/catalog" className="entity-link">
+          <strong>Back to catalog</strong>
+          <p className="muted" style={{ marginBottom: 0 }}>Return to the grouped discovery view.</p>
+        </Link>
+        <Link href="/docs" className="entity-link">
+          <strong>Browse docs</strong>
+          <p className="muted" style={{ marginBottom: 0 }}>Open the docs index for ADRs, guides, and implementation notes.</p>
+        </Link>
+      </div>
+
       <BrokenReferenceBanner references={entity.brokenReferences} />
 
       <CatalogEntityNeighbors entity={entity} />
+      <CatalogEntityGraph entity={entity} />
 
       {entity.kind === 'Domain' && (
         <RelationshipPanel
@@ -220,6 +252,8 @@ export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRela
           emptyMessage=""
         />
       )}
+
+      <ExternalLinksPanel links={metadataLinks} />
 
       {showBody && <Markdown content={entity.metadata.description ?? entity.summary ?? ''} />}
     </section>
