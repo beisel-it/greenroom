@@ -52,6 +52,13 @@ That split is intentional for this cycle handoff. Exit review should treat TechD
 - Add a short maintainer note describing when to place content in `content/docs` versus `docs/` until the source-of-truth decision is made.
 - If TechDocs-lite remains in scope, improve the static renderer incrementally instead of broadening content usage first; otherwise reviewers will overestimate what the export path supports.
 
+## QA and operations addendum
+
+- Final QA uncovered a mix of missing worker commits and stale docs assertions, which temporarily blocked end-to-end validation on canonical state.
+- Recovery required integrating the missing worker commits first, then landing narrow docs test-expectation fixes on top of the recovered coordinator head before QA could resume final confirmation.
+- During that recovery, local verification in this worktree remained partially blocked because the workspace did not have project dependencies installed, so final confirmation depended on post-integration QA in a dependency-complete environment.
+- Operational rule for future cycles: heavy workspace, test, browser, and temp state must live under `/mnt/HC_Volume_105107739`. Do not use `/tmp` or `/home` for those heavier paths unless that rule is explicitly changed.
+
 ## Operator notes
 
 Regenerate the docs-madr outputs manually:
