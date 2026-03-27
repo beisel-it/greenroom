@@ -19,6 +19,7 @@ describe('Docs index page', () => {
     const markup = renderToString(<DocsIndexPage />);
 
     expect(markup).toContain('Documentation');
+    expect(markup).toContain('ADR');
     expect(markup).toContain('Getting Started');
     expect(markup).toContain('/docs/getting-started/overview');
     expect(markup).toContain('/docs/getting-started/contributing');

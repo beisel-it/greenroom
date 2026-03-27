@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { DiscoverySearch } from '@/components/discovery-search';
 import { getCatalogEntities, getDocPages } from '@/lib/content';
 
 export default function HomePage() {
@@ -24,34 +24,23 @@ export default function HomePage() {
         <div className="card"><div className="kicker">Docs</div><h2>{docs.length}</h2><p className="muted">Markdown pages rendered in-app.</p></div>
       </section>
 
-      <section className="grid cols-2">
-        <div className="panel">
-          <div className="kicker">Catalog snapshot</div>
-          <div className="list" style={{ marginTop: 16 }}>
-            {entities.slice(0, 6).map((entity) => (
-              <Link key={entity.slug} href={`/catalog/${entity.slug}`} className="entity-link">
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                  <strong>{entity.title}</strong>
-                  <span className="badge">{entity.kind}</span>
-                </div>
-                <p className="muted">{entity.summary}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="panel">
-          <div className="kicker">Docs snapshot</div>
-          <div className="list" style={{ marginTop: 16 }}>
-            {docs.slice(0, 6).map((doc) => (
-              <Link key={doc.slug} href={`/docs/${doc.slug}`} className="entity-link">
-                <strong>{doc.title}</strong>
-                <p className="muted">{doc.summary}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <DiscoverySearch
+        entities={entities.map((entity) => ({
+          slug: entity.slug,
+          title: entity.title,
+          summary: entity.summary,
+          entityRef: entity.entityRef,
+          kind: entity.kind,
+          owner: 'owner' in entity.spec ? (entity.spec as { owner?: string }).owner : undefined,
+          tags: entity.metadata.tags ?? [],
+        }))}
+        docs={docs.map((doc) => ({
+          slug: doc.slug,
+          title: doc.title,
+          summary: doc.summary,
+          body: doc.body,
+        }))}
+      />
     </>
   );
 }

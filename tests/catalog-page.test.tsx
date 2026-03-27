@@ -65,6 +65,7 @@ describe('catalog index page', () => {
       'system/default/dev-portal',
       'system/default/release-orchestrator',
     ]);
+    expect(groupedByOwner.Component?.map((e) => e.slug)).toContain('component/default/greenroom');
     expect(groupedByOwner.Component?.map((e) => e.slug)).toContain('component/default/greenroom-web');
 
     const groupedByTag = deriveGroupedCatalog(entities, { tag: 'api' });

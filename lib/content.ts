@@ -135,6 +135,10 @@ export function getDocPage(slugParts: string[]) {
 }
 
 function segmentTitle(segment: string) {
+  if (segment.toLowerCase() === 'adr') {
+    return 'ADR';
+  }
+
   return segment
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))

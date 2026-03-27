@@ -115,6 +115,7 @@ Catalog detail pages currently expose:
 
 - breadcrumbs for graph traversal
 - grouped neighbor cards and relation filters
+- relationship diagram controls with graph-local edge filters plus a hierarchy-focused exploration preset
 - kind-specific panels for systems, components, APIs, resources, and providers/consumers
 - broken-reference warnings when sample or real catalog content is inconsistent
 

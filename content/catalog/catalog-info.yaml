@@ -48,6 +48,13 @@ metadata:
   title: Greenroom Web
   description: Next.js frontend that renders catalog entities and TechDocs-lite pages.
   tags: [web, nextjs]
+  links:
+    - url: /docs/getting-started/overview
+      title: Getting Started Overview
+      type: docs
+    - url: /docs/adr/0002-entity-rendering
+      title: "ADR 0002: Entity Rendering"
+      type: adr
 spec:
   type: website
   owner: platform-team

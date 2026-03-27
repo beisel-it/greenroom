@@ -1,0 +1,23 @@
+---
+apiVersion: backstage.io/v1beta1
+kind: Component
+metadata:
+  name: greenroom
+  title: Greenroom
+  description: Repository-owned project metadata for Greenroom itself, dogfooding the catalog-info contract it ingests.
+  tags: [repo, catalog, dogfood]
+  links:
+    - url: /docs
+      title: Documentation Index
+      type: docs
+    - url: /docs/getting-started/overview
+      title: Getting Started Overview
+      type: docs
+    - url: /docs/adr/0002-entity-rendering
+      title: "ADR 0002: Entity Rendering"
+      type: adr
+spec:
+  type: other
+  owner: platform-team
+  lifecycle: production
+  system: dev-portal

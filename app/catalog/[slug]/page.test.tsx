@@ -86,6 +86,9 @@ describe('CatalogEntityContent relationships', () => {
     expect(html).toContain('Provides / Consumes API');
     expect(html).toContain('Depends On');
     expect(html).toContain('Relationship diagram');
+    expect(html).toContain('Show all edges');
+    expect(html).toContain('Focus hierarchy path');
+    expect(html).toContain('Traversal path');
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('/catalog/system/default/dev-portal');
     expect(html).toContain('/catalog/api/default/platform-shell-api');
@@ -167,6 +170,36 @@ describe('CatalogEntityContent relationships', () => {
     expect(html).toContain('Broken references');
     expect(html).toContain('unresolved spec.domain reference');
     expect(html).toContain('Domain:default/missing-domain');
+  });
+
+  it('renders metadata links for self-documented catalog entities', () => {
+    const html = render({
+      ...baseEntity,
+      kind: 'Component',
+      metadata: {
+        ...baseEntity.metadata,
+        name: 'greenroom',
+        links: [
+          { url: '/docs', title: 'Documentation Index', type: 'docs' },
+          { url: '/docs/getting-started/overview', title: 'Getting Started Overview', type: 'docs' },
+          { url: '/docs/adr/0002-entity-rendering', title: 'ADR 0002: Entity Rendering', type: 'adr' },
+        ],
+      },
+      spec: {
+        type: 'other',
+        owner: 'platform-team',
+        lifecycle: 'production',
+        system: 'dev-portal',
+      },
+      slug: 'component/default/greenroom',
+      entityRef: 'Component:default/greenroom',
+    });
+
+    expect(html).toContain('Links');
+    expect(html).toContain('/docs/getting-started/overview');
+    expect(html).toContain('Getting Started Overview');
+    expect(html).toContain('/docs/adr/0002-entity-rendering');
+    expect(html).toContain('Documentation Index');
   });
 
   it('shows an empty neighbors state when an entity has no direct relations', () => {

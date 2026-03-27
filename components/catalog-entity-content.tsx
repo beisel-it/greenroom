@@ -81,6 +81,31 @@ function SummaryCard({ label, value }: { label: string; value?: string }) {
   );
 }
 
+function MetadataLinks({ links }: { links: NonNullable<CatalogEntityWithRelationships['metadata']['links']> }) {
+  if (links.length === 0) return null;
+
+  return (
+    <div className="card">
+      <div className="kicker">Links</div>
+      <div className="list" style={{ marginTop: 12 }}>
+        {links.map((link, index) => (
+          <a
+            key={`${link.url}:${index}`}
+            href={link.url}
+            className="entity-link"
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              <strong>{link.title ?? link.url}</strong>
+              {link.type ? <span className="badge">{link.type}</span> : null}
+            </div>
+            <p className="muted">{link.url}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function getExplorerBreadcrumbs(entity: CatalogEntityWithRelationships): BreadcrumbItem[] {
   const { relations } = entity;
   const breadcrumbs: BreadcrumbItem[] = [];
@@ -178,6 +203,8 @@ export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRela
       </div>
 
       <BrokenReferenceBanner references={entity.brokenReferences} />
+
+      {entity.metadata.links?.length ? <MetadataLinks links={entity.metadata.links} /> : null}
 
       <CatalogEntityNeighbors entity={entity} />
       <CatalogEntityGraph entity={entity} />

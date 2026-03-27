@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { getCatalogEntities } from '../lib/content';
 import {
+  allCatalogNeighborGroupKeys,
   filterCatalogNeighborGroups,
   getCatalogEntityRelations,
   getCatalogEntityMermaidChart,
+  getCatalogGraphPresetKeys,
   getCatalogNeighborGroups,
   getGraphTraversalPath,
 } from '../lib/catalog-graph';
@@ -39,6 +41,7 @@ describe('catalog graph helper', () => {
     expect(response?.neighbors.owner?.entityRef).toBe('Group:default/platform-team');
     expect(response?.neighbors.domain?.entityRef).toBe('Domain:default/developer-experience');
     expect(response?.neighbors.componentsInSystem.map((ref) => ref.entityRef).sort()).toEqual([
+      'Component:default/greenroom',
       'Component:default/greenroom-web',
       'Component:platform/docs-service',
     ]);
@@ -150,8 +153,33 @@ describe('catalog graph helper', () => {
     expect(chart).toContain('Greenroom Web\\nComponent');
     expect(chart).toContain('Platform Shell API\\nAPI');
     expect(chart).toContain('Developer Portal\\nSystem');
-    expect(chart).toContain('|provides API|');
-    expect(chart).toContain('|depends on|');
+    expect(chart).toContain('|Provides API|');
+    expect(chart).toContain('|Depends on|');
+  });
+
+  it('supports focused graph presets without changing the API contract', () => {
+    const entity = entities.find((entry) => entry.slug === 'component/default/greenroom-web');
+
+    expect(entity).toBeDefined();
+    expect(allCatalogNeighborGroupKeys).toEqual([
+      'ownership',
+      'part-of',
+      'depends-on',
+      'api',
+      'system-domain',
+    ]);
+    expect(getCatalogGraphPresetKeys('hierarchy')).toEqual([
+      'ownership',
+      'part-of',
+      'system-domain',
+    ]);
+
+    const hierarchyChart = getCatalogEntityMermaidChart(entity!, getCatalogGraphPresetKeys('hierarchy'));
+
+    expect(hierarchyChart).toContain('|Owned by|');
+    expect(hierarchyChart).toContain('|System|');
+    expect(hierarchyChart).not.toContain('Platform Database\\nResource');
+    expect(hierarchyChart).not.toContain('Platform Shell API\\nAPI');
   });
 
   it('returns null for an unknown entity slug', () => {
