@@ -16,6 +16,7 @@ describe('catalog relations API route', () => {
     expect(payload.neighbors.system.entityRef).toBe('System:default/dev-portal');
     expect(payload.neighbors.providesApis.map((ref: { entityRef: string }) => ref.entityRef)).toEqual([
       'API:default/platform-shell-api',
+      'API:default/greenroom-api',
     ]);
   });
 

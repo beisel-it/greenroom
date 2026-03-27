@@ -29,7 +29,7 @@ describe('catalog entity page route', () => {
     const markup = renderToString(element);
 
     expect(markup).toContain('Developer Portal');
-    expect(markup).toContain('Relationship diagram');
+    expect(markup).toContain('Neighbors');
     expect(markup).toContain('/catalog/component/default/greenroom-web');
   });
 
