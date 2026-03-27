@@ -6,6 +6,11 @@
       "title": "Greenroom feature-dev seed stories"
     },
     {
+      "id": "roadmap/cycle-1-exit-review.md",
+      "path": "roadmap/cycle-1-exit-review.md",
+      "title": "Greenroom cycle 1 exit review handoff"
+    },
+    {
       "id": "adr/README-ADR.md",
       "path": "adr/README-ADR.md",
       "title": "ADRs in Greenroom"

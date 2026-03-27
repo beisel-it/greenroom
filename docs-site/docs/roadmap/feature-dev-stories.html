@@ -3,27 +3,33 @@
 <p>These stories translate the research into right-sized Antfarm work.</p>
 <br>
 <h2>US-001 — Catalog schema + validation</h2>
-<p>- Add a shared TypeScript schema for `org`, `team`, `system`, `component` markdown frontmatter.</p>
-<p>- Add runtime validation when loading content and fail clearly on invalid metadata.</p>
-<p>- Acceptance criteria:</p>
+<ul>
+<li>Add a shared TypeScript schema for <code>org</code>, <code>team</code>, <code>system</code>, <code>component</code> markdown frontmatter.</li>
+<li>Add runtime validation when loading content and fail clearly on invalid metadata.</li>
+<li>Acceptance criteria:</li>
+</ul>
 <p>  - Loading catalog content validates required fields per kind.</p>
 <p>  - Invalid frontmatter surfaces a readable error in development.</p>
 <p>  - Tests for catalog schema validation pass.</p>
 <p>  - Typecheck passes.</p>
 <br>
 <h2>US-002 — Catalog index and facet filters</h2>
-<p>- Build a catalog landing page grouped by kind with filters for owner/team/tags.</p>
-<p>- Keep UI intentionally simple and fast.</p>
-<p>- Acceptance criteria:</p>
+<ul>
+<li>Build a catalog landing page grouped by kind with filters for owner/team/tags.</li>
+<li>Keep UI intentionally simple and fast.</li>
+<li>Acceptance criteria:</li>
+</ul>
 <p>  - Catalog page lists all entities grouped by kind.</p>
 <p>  - Filters for owner, team, and tag update the visible entities.</p>
 <p>  - Tests for catalog filtering pass.</p>
 <p>  - Typecheck passes.</p>
 <br>
 <h2>US-003 — Entity relationship panels</h2>
-<p>- Add relationship sections so team pages link to systems and system pages link to components.</p>
-<p>- Derive relationships from markdown metadata only.</p>
-<p>- Acceptance criteria:</p>
+<ul>
+<li>Add relationship sections so team pages link to systems and system pages link to components.</li>
+<li>Derive relationships from markdown metadata only.</li>
+<li>Acceptance criteria:</li>
+</ul>
 <p>  - Team entities show linked systems.</p>
 <p>  - System entities show linked components.</p>
 <p>  - Broken references render a visible warning state.</p>
@@ -31,36 +37,44 @@
 <p>  - Typecheck passes.</p>
 <br>
 <h2>US-004 — Docs navigation shell</h2>
-<p>- Add sidebar navigation, previous/next links, and docs index generation from the docs tree.</p>
-<p>- Preserve markdown-first authoring.</p>
-<p>- Acceptance criteria:</p>
-<p>  - Docs pages render a sidebar generated from `content/docs`.</p>
+<ul>
+<li>Add sidebar navigation, previous/next links, and docs index generation from the docs tree.</li>
+<li>Preserve markdown-first authoring.</li>
+<li>Acceptance criteria:</li>
+</ul>
+<p>  - Docs pages render a sidebar generated from <code>content/docs</code>.</p>
 <p>  - Previous/next links work for nested docs pages.</p>
 <p>  - Tests for docs navigation pass.</p>
 <p>  - Typecheck passes.</p>
 <br>
 <h2>US-005 — Mermaid-safe rendering pipeline</h2>
-<p>- Improve diagram rendering with better loading, dark-mode-safe styling, and graceful fallback.</p>
-<p>- Support multiple Mermaid blocks on one page.</p>
-<p>- Acceptance criteria:</p>
+<ul>
+<li>Improve diagram rendering with better loading, dark-mode-safe styling, and graceful fallback.</li>
+<li>Support multiple Mermaid blocks on one page.</li>
+<li>Acceptance criteria:</li>
+</ul>
 <p>  - Multiple Mermaid fences render on a single page.</p>
 <p>  - Invalid Mermaid source falls back without crashing the page.</p>
 <p>  - Tests for Mermaid rendering behavior pass.</p>
 <p>  - Typecheck passes.</p>
 <br>
 <h2>US-006 — Search across entities and docs</h2>
-<p>- Add a local search index for titles, summaries, and markdown headings.</p>
-<p>- Search should cover both catalog entities and docs pages.</p>
-<p>- Acceptance criteria:</p>
+<ul>
+<li>Add a local search index for titles, summaries, and markdown headings.</li>
+<li>Search should cover both catalog entities and docs pages.</li>
+<li>Acceptance criteria:</li>
+</ul>
 <p>  - Search returns mixed results from catalog and docs.</p>
 <p>  - Results include title, type, and path.</p>
 <p>  - Tests for search indexing and lookup pass.</p>
 <p>  - Typecheck passes.</p>
 <br>
 <h2>US-007 — Seed org-level content and contributor templates</h2>
-<p>- Add the first org entity plus reusable markdown templates for new teams, systems, and components.</p>
-<p>- Keep authoring conventions explicit.</p>
-<p>- Acceptance criteria:</p>
+<ul>
+<li>Add the first org entity plus reusable markdown templates for new teams, systems, and components.</li>
+<li>Keep authoring conventions explicit.</li>
+<li>Acceptance criteria:</li>
+</ul>
 <p>  - An org entity exists and links cleanly into the existing model.</p>
 <p>  - Template files exist for team, system, and component entities.</p>
 <p>  - Tests for seed content loading pass.</p>

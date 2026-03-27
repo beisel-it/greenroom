@@ -1,0 +1,77 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Greenroom cycle 1 exit review handoff</title></head><body><h1>Greenroom cycle 1 exit review handoff</h1>
+<br>
+<h2>Scope owned by docs-madr</h2>
+<br>
+<p>This stream covered TechDocs-lite and MADR-friendly ADR rendering for the MVP cycle.</p>
+<br>
+<h2>What shipped this cycle</h2>
+<br>
+<p>Delivered:</p>
+<br>
+<ul>
+<li><code>scripts/adr_discovery.py</code> scans <code>docs/adr/*.md</code> and regenerates <a href="docs/adr/INDEX.md">`docs/adr/INDEX.md`</a> plus <a href="docs/adr/README-ADR.md">`docs/adr/README-ADR.md`</a>.</li>
+<li><code>techdocs-lite/ingest.py</code> scans the repository <code>docs/</code> tree and writes a lightweight navigation manifest to <a href="techdocs-lite/nav.json">`techdocs-lite/nav.json`</a>.</li>
+<li><code>techdocs-lite/render.py</code> renders Markdown from <code>docs/</code> into static HTML under <a href="docs-site/docs">`docs-site/docs`</a> and writes a simple index page at <a href="docs-site/index.html">`docs-site/index.html`</a>.</li>
+<li>The repository includes seeded MADR content in <a href="docs/adr">`docs/adr`</a> and generated static output for the current docs set.</li>
+<li>The main repository README now points maintainers to the docs/ADR helper commands and to this handoff note for exit review context.</li>
+</ul>
+<br>
+<h2>Important implementation boundary</h2>
+<br>
+<p>Greenroom currently has two separate documentation surfaces:</p>
+<br>
+<ul>
+<li>The in-app docs experience at <code>/docs</code> reads Markdown from <code>content/docs</code> through the Next.js content helpers in <a href="lib/content.ts">`lib/content.ts`</a>.</li>
+<li>The TechDocs-lite and MADR export path reads Markdown from the repository-level <code>docs/</code> folder and emits static HTML into <code>docs-site/</code>.</li>
+</ul>
+<br>
+<p>That split is intentional for this cycle handoff. Exit review should treat TechDocs-lite/MADR as a lightweight parallel export path, not as the source for the in-app <code>/docs</code> route.</p>
+<br>
+<h2>Explicitly in scope for cycle 1</h2>
+<br>
+<ul>
+<li>Lightweight ADR discovery and index generation for <code>docs/adr</code>.</li>
+<li>Static HTML rendering for the repository <code>docs/</code> tree.</li>
+<li>Checked-in generated artifacts so reviewers can inspect output without running a build pipeline.</li>
+<li>Seed ADR content proving the MADR flow works end to end.</li>
+</ul>
+<br>
+<h2>Explicitly out of scope for cycle 1</h2>
+<br>
+<ul>
+<li>Unifying <code>content/docs</code> and <code>docs/</code> into one authoring source.</li>
+<li>Integrating the static <code>docs-site/</code> output into the Next.js runtime or routing.</li>
+<li>CI automation or npm scripts for <code>adr_discovery.py</code>, <code>techdocs-lite/ingest.py</code>, or <code>techdocs-lite/render.py</code>.</li>
+<li>Full TechDocs parity: search, theming, plugins, metadata standards, or MkDocs compatibility.</li>
+<li>Rich Markdown rendering in the static export beyond the current simple heading/paragraph conversion.</li>
+</ul>
+<br>
+<h2>Known documentation gaps</h2>
+<br>
+<ul>
+<li>There is no single top-level architecture note explaining why <code>content/docs</code> and <code>docs/</code> currently coexist, so that boundary has to be inferred from code and scripts unless this handoff is consulted.</li>
+<li>The helper scripts are runnable from the repository root, but they are not yet wrapped in <code>package.json</code> scripts or CI checks.</li>
+<li>The checked-in static output under <code>docs-site/</code> is easy to review, but there is no freshness signal showing whether it is in sync with the latest Markdown sources.</li>
+<li>The static renderer currently supports only a narrow Markdown subset, so reviewers should not assume parity with the richer in-app Markdown rendering path.</li>
+</ul>
+<br>
+<h2>Follow-up recommendations</h2>
+<br>
+<ul>
+<li>Decide on a single documentation source of truth before adding more docs features. The current split is workable for MVP review, but it will create drift if both trees keep growing.</li>
+<li>Add lightweight automation for regeneration, either as npm scripts or CI validation, before relying on <code>docs-site/</code> as a review artifact in later cycles.</li>
+<li>Add a short maintainer note describing when to place content in <code>content/docs</code> versus <code>docs/</code> until the source-of-truth decision is made.</li>
+<li>If TechDocs-lite remains in scope, improve the static renderer incrementally instead of broadening content usage first; otherwise reviewers will overestimate what the export path supports.</li>
+</ul>
+<br>
+<h2>Operator notes</h2>
+<br>
+<p>Regenerate the docs-madr outputs manually:</p>
+<br>
+<p>```bash</p>
+<p>python3 scripts/adr_discovery.py</p>
+<p>python3 techdocs-lite/ingest.py</p>
+<p>python3 techdocs-lite/render.py</p>
+<p>```</p>
+<br>
+<p>If a future cycle wants one docs system instead of two, the first decision should be whether <code>content/docs</code> becomes the single source of truth or whether the app should start consuming the <code>docs/</code> tree directly.</p></body></html>
