@@ -122,8 +122,12 @@ main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
 .neighbors-group-header { display:flex; justify-content:space-between; gap:12px; align-items:center; }
 .neighbors-group-header h2 { margin:0; font-size:1.05rem; }
 .relationship-diagram { display:flex; flex-direction:column; gap:14px; }
+.relationship-diagram-header { display:flex; flex-wrap:wrap; justify-content:space-between; gap:14px; align-items:flex-start; }
+.relationship-diagram-preset-list { display:flex; flex-wrap:wrap; gap:10px; }
 .relationship-diagram h2 { margin:0; font-size:1.1rem; }
 .relationship-diagram-copy { margin:0; }
+.relationship-diagram-path { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.relationship-diagram-path-list { display:flex; flex-wrap:wrap; gap:10px; }
 .markdown { line-height:1.7; }
 .markdown pre { background:#091120; padding:16px; border-radius:12px; overflow:auto; border:1px solid var(--line); }
 .markdown code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
