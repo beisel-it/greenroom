@@ -48,7 +48,7 @@ Catalog landing page with discovery-oriented entry points into entities and docs
 ### Catalog Entity
 
 <p>
-  <img src="docs/assets/readme/catalog-entity.png" alt="Greenroom catalog entity page showing relationships and ownership context" width="900" />
+  <img src="docs/assets/readme/catalog-entity.png" alt="Greenroom repo-owned catalog entity page with documentation links" width="900" />
 </p>
 
 Entity detail surface with ownership, graph traversal, relationships, Mermaid diagrams, and broken-reference visibility.
