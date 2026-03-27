@@ -78,7 +78,7 @@ describe('CatalogEntityContent relationships', () => {
       },
     });
 
-    expect(html).toContain('Neighbors');
+    expect(html).toContain('Graph and neighbors');
     expect(html).toContain('Catalog path');
     expect(html).toContain('/catalog/domain/default/developer-experience');
     expect(html).toContain('Ownership');
@@ -86,6 +86,7 @@ describe('CatalogEntityContent relationships', () => {
     expect(html).toContain('Provides / Consumes API');
     expect(html).toContain('Depends On');
     expect(html).toContain('Relationship diagram');
+    expect(html).toContain('Neighbor index');
     expect(html).toContain('Show all edges');
     expect(html).toContain('Focus hierarchy path');
     expect(html).toContain('Traversal path');
@@ -195,7 +196,7 @@ describe('CatalogEntityContent relationships', () => {
       entityRef: 'Component:default/greenroom',
     });
 
-    expect(html).toContain('Links');
+    expect(html).toContain('References');
     expect(html).toContain('/docs/getting-started/overview');
     expect(html).toContain('Getting Started Overview');
     expect(html).toContain('/docs/adr/0002-entity-rendering');
@@ -213,7 +214,8 @@ describe('CatalogEntityContent relationships', () => {
       relations: { ...baseRelations },
     });
 
-    expect(html).toContain('Neighbors');
+    expect(html).toContain('Related entities');
     expect(html).toContain('This entity has no direct catalog neighbors yet.');
+    expect(html).toContain('The workbench stays ready for future ownership');
   });
 });

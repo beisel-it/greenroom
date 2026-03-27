@@ -2,7 +2,6 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import type { BrokenReference, CatalogEntityWithRelationships, EntityReference } from '@/lib/content';
 import { CatalogEntityGraph } from './catalog-entity-graph';
-import { CatalogEntityNeighbors } from './catalog-entity-neighbors';
 import { Markdown } from './markdown';
 
 type RelationshipPanelProps = {
@@ -16,24 +15,6 @@ type BreadcrumbItem = {
   title: string;
   href?: string;
 };
-
-function ExternalLinksPanel({ links }: { links: Array<{ url: string; title?: string; icon?: string }> }) {
-  if (links.length === 0) return null;
-
-  return (
-    <div className="card">
-      <div className="kicker">References</div>
-      <div className="list" style={{ marginTop: 12 }}>
-        {links.map((link) => (
-          <a key={`${link.url}:${link.title ?? ''}`} href={link.url} className="entity-link" target="_blank" rel="noreferrer">
-            <strong>{link.title ?? link.url}</strong>
-            <p className="muted" style={{ marginBottom: 0 }}>{link.url}</p>
-          </a>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function RelationshipPanel({ title, entities, emptyMessage }: RelationshipPanelProps) {
   return (
@@ -77,7 +58,7 @@ function BrokenReferenceBanner({ references }: { references: BrokenReference[] }
 
 function SummaryCard({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="card"><strong>{label}</strong><div className="muted">{value ?? '—'}</div></div>
+    <div className="card catalog-summary-card"><strong>{label}</strong><div className="muted">{value ?? '—'}</div></div>
   );
 }
 
@@ -86,7 +67,7 @@ function MetadataLinks({ links }: { links: NonNullable<CatalogEntityWithRelation
 
   return (
     <div className="card">
-      <div className="kicker">Links</div>
+      <div className="kicker">References</div>
       <div className="list" style={{ marginTop: 12 }}>
         {links.map((link, index) => (
           <a
@@ -172,117 +153,123 @@ export function CatalogEntityContent({ entity }: { entity: CatalogEntityWithRela
   const showBody = Boolean(entity.summary || entity.metadata.description);
 
   return (
-    <section className="panel">
-      <ExplorerBreadcrumbs items={breadcrumbs} />
+    <section className="panel catalog-workbench">
+      <aside className="catalog-workbench-rail">
+        <ExplorerBreadcrumbs items={breadcrumbs} />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'start' }}>
-        <div>
-          <div className="kicker">{entity.kind}</div>
-          <h1>{entity.title}</h1>
-          <p className="muted">{entity.summary}</p>
+        <div className="catalog-workbench-hero">
+          <div>
+            <div className="kicker">{entity.kind}</div>
+            <h1>{entity.title}</h1>
+            <p className="muted">{entity.summary}</p>
+          </div>
+          <div className="badge">{entity.entityRef}</div>
         </div>
-        <div className="badge">{entity.entityRef}</div>
+
+        <div className="catalog-summary-grid">
+          <SummaryCard label="Owner" value={owner} />
+          <SummaryCard label="Domain" value={domain} />
+          <SummaryCard label="System" value={system} />
+        </div>
+
+        <div className="catalog-entity-actions">
+          <Link href="/catalog" className="entity-link">
+            <strong>Back to catalog</strong>
+            <p className="muted" style={{ marginBottom: 0 }}>Return to the grouped discovery view.</p>
+          </Link>
+          <Link href="/docs" className="entity-link">
+            <strong>Browse docs</strong>
+            <p className="muted" style={{ marginBottom: 0 }}>Open the docs index for ADRs, guides, and implementation notes.</p>
+          </Link>
+        </div>
+
+        <BrokenReferenceBanner references={entity.brokenReferences} />
+
+        {entity.metadata.links?.length ? <MetadataLinks links={entity.metadata.links} /> : null}
+      </aside>
+
+      <div className="catalog-workbench-main">
+        <CatalogEntityGraph entity={entity} />
+
+        <section className="catalog-workbench-support">
+          {entity.kind === 'Domain' && (
+            <RelationshipPanel
+              title="Systems in domain"
+              entities={relations.systemsInDomain}
+              emptyMessage="No systems are linked to this domain yet."
+            />
+          )}
+
+          {entity.kind === 'System' && (
+            <div className="grid cols-3" style={{ gap: 16 }}>
+              <RelationshipPanel
+                title="Components"
+                entities={relations.componentsInSystem}
+                emptyMessage="No components linked to this system."
+              />
+              <RelationshipPanel
+                title="APIs"
+                entities={relations.apisInSystem}
+                emptyMessage="No APIs linked to this system."
+              />
+              <RelationshipPanel
+                title="Resources"
+                entities={relations.resourcesInSystem}
+                emptyMessage="No resources linked to this system."
+              />
+            </div>
+          )}
+
+          {entity.kind === 'API' && (
+            <div className="grid cols-2" style={{ gap: 16 }}>
+              <RelationshipPanel
+                title="Providing components"
+                entities={relations.providingComponents}
+                emptyMessage="No components provide this API yet."
+              />
+              <RelationshipPanel
+                title="Consuming components"
+                entities={relations.consumingComponents}
+                emptyMessage="No consumers detected."
+              />
+            </div>
+          )}
+
+          {entity.kind === 'Component' && (
+            <div className="grid cols-3" style={{ gap: 16 }}>
+              <RelationshipPanel
+                title="Provides APIs"
+                entities={relations.providesApis}
+                emptyMessage="No provided APIs declared."
+              />
+              <RelationshipPanel
+                title="Consumes APIs"
+                entities={relations.consumesApis}
+                emptyMessage="No consumed APIs declared."
+              />
+              <RelationshipPanel
+                title="Depends on"
+                entities={relations.dependsOn}
+                emptyMessage="No dependencies declared."
+              />
+            </div>
+          )}
+
+          {relations.dependents.length > 0 && (
+            <RelationshipPanel
+              title="Dependents"
+              entities={relations.dependents}
+              emptyMessage=""
+            />
+          )}
+          {showBody ? (
+            <div className="card catalog-workbench-body">
+              <div className="kicker">Narrative</div>
+              <Markdown content={entity.metadata.description ?? entity.summary ?? ''} />
+            </div>
+          ) : null}
+        </section>
       </div>
-
-      <div className="grid cols-3" style={{ margin: '20px 0' }}>
-        <SummaryCard label="Owner" value={owner}
-        />
-        <SummaryCard label="Domain" value={domain} />
-        <SummaryCard label="System" value={system} />
-      </div>
-
-      <div className="catalog-entity-actions">
-        <Link href="/catalog" className="entity-link">
-          <strong>Back to catalog</strong>
-          <p className="muted" style={{ marginBottom: 0 }}>Return to the grouped discovery view.</p>
-        </Link>
-        <Link href="/docs" className="entity-link">
-          <strong>Browse docs</strong>
-          <p className="muted" style={{ marginBottom: 0 }}>Open the docs index for ADRs, guides, and implementation notes.</p>
-        </Link>
-      </div>
-
-      <BrokenReferenceBanner references={entity.brokenReferences} />
-
-      {entity.metadata.links?.length ? <MetadataLinks links={entity.metadata.links} /> : null}
-
-      <CatalogEntityNeighbors entity={entity} />
-      <CatalogEntityGraph entity={entity} />
-
-      {entity.kind === 'Domain' && (
-        <RelationshipPanel
-          title="Systems in domain"
-          entities={relations.systemsInDomain}
-          emptyMessage="No systems are linked to this domain yet."
-        />
-      )}
-
-      {entity.kind === 'System' && (
-        <div className="grid cols-3" style={{ gap: 16 }}>
-          <RelationshipPanel
-            title="Components"
-            entities={relations.componentsInSystem}
-            emptyMessage="No components linked to this system."
-          />
-          <RelationshipPanel
-            title="APIs"
-            entities={relations.apisInSystem}
-            emptyMessage="No APIs linked to this system."
-          />
-          <RelationshipPanel
-            title="Resources"
-            entities={relations.resourcesInSystem}
-            emptyMessage="No resources linked to this system."
-          />
-        </div>
-      )}
-
-      {entity.kind === 'API' && (
-        <div className="grid cols-2" style={{ gap: 16 }}>
-          <RelationshipPanel
-            title="Providing components"
-            entities={relations.providingComponents}
-            emptyMessage="No components provide this API yet."
-          />
-          <RelationshipPanel
-            title="Consuming components"
-            entities={relations.consumingComponents}
-            emptyMessage="No consumers detected."
-          />
-        </div>
-      )}
-
-      {entity.kind === 'Component' && (
-        <div className="grid cols-3" style={{ gap: 16 }}>
-          <RelationshipPanel
-            title="Provides APIs"
-            entities={relations.providesApis}
-            emptyMessage="No provided APIs declared."
-          />
-          <RelationshipPanel
-            title="Consumes APIs"
-            entities={relations.consumesApis}
-            emptyMessage="No consumed APIs declared."
-          />
-          <RelationshipPanel
-            title="Depends on"
-            entities={relations.dependsOn}
-            emptyMessage="No dependencies declared."
-          />
-        </div>
-      )}
-
-      {relations.dependents.length > 0 && (
-        <RelationshipPanel
-          title="Dependents"
-          entities={relations.dependents}
-          emptyMessage=""
-        />
-      )}
-
-      <ExternalLinksPanel links={metadataLinks} />
-
-      {showBody && <Markdown content={entity.metadata.description ?? entity.summary ?? ''} />}
     </section>
   );
 }
