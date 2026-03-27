@@ -21,6 +21,8 @@ export type LoadedCatalogEntity = CatalogEntityEnvelope & {
 type LoadOptions = {
   /** Override the catalog root directory. Defaults to `<cwd>/content/catalog`. */
   catalogDir?: string;
+  /** Override the repo-owned catalog-info.yaml file. Included by default when using the default catalogDir. */
+  repoCatalogFile?: string;
 };
 
 export type CatalogLoadErrorCode = 'yaml_parse' | 'yaml_empty' | 'validation';
@@ -165,9 +167,23 @@ function findCatalogInfoFiles(dir: string): string[] {
   return [...files, ...nested];
 }
 
-export function loadCatalogEntitiesFromYaml(options: LoadOptions = {}): LoadedCatalogEntity[] {
+function collectCatalogInfoFiles(options: LoadOptions): string[] {
   const catalogDir = options.catalogDir ?? path.join(process.cwd(), 'content', 'catalog');
   const files = findCatalogInfoFiles(catalogDir);
+
+  // Dogfood the same contract from the repository root when using the default catalog content.
+  if (options.catalogDir === undefined) {
+    const repoCatalogFile = options.repoCatalogFile ?? path.join(process.cwd(), 'catalog-info.yaml');
+    if (fs.existsSync(repoCatalogFile) && !files.includes(repoCatalogFile)) {
+      files.push(repoCatalogFile);
+    }
+  }
+
+  return files;
+}
+
+export function loadCatalogEntitiesFromYaml(options: LoadOptions = {}): LoadedCatalogEntity[] {
+  const files = collectCatalogInfoFiles(options);
   const errors: CatalogLoadError[] = [];
 
   const entities = files.flatMap((filePath) => {

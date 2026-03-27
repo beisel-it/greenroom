@@ -10,14 +10,13 @@ const fixturesRoot = path.join(process.cwd(), 'tests', 'fixtures', 'catalog-load
 
 describe('catalog-info loader', () => {
   it('accepts the sample catalog-info.yaml with all MVP kinds and normalizes refs', () => {
-    const entities = loadCatalogEntitiesFromYaml({
-      catalogDir: path.join(process.cwd(), 'content', 'catalog'),
-    });
+    const entities = loadCatalogEntitiesFromYaml();
 
     expect(entities.map((entity) => entity.kind)).toEqual([
       'API',
       'API',
       'API',
+      'Component',
       'Component',
       'Component',
       'Domain',
@@ -33,6 +32,7 @@ describe('catalog-info loader', () => {
     const developerPortal = entities.find(
       (entity) => entity.kind === 'System' && entity.metadata.name === 'dev-portal',
     );
+    const greenroomRepo = entities.find((entity) => entity.metadata.name === 'greenroom');
     const greenroomApi = entities.find((entity) => entity.metadata.name === 'greenroom-api');
     const greenroomAsyncApi = entities.find(
       (entity) => entity.metadata.name === 'greenroom-async-api',
@@ -46,6 +46,18 @@ describe('catalog-info loader', () => {
       ],
       dependsOn: ['Resource:default/platform-db'],
     });
+    expect(greenroomWeb?.metadata.links).toEqual([
+      {
+        url: '/docs/getting-started/overview',
+        title: 'Getting Started Overview',
+        type: 'docs',
+      },
+      {
+        url: '/docs/adr/0002-entity-rendering',
+        title: 'ADR 0002: Entity Rendering',
+        type: 'adr',
+      },
+    ]);
     expect(docsService?.spec).toMatchObject({
       system: 'System:default/dev-portal',
       consumesApis: ['API:default/platform-shell-api'],
@@ -54,6 +66,28 @@ describe('catalog-info loader', () => {
     expect(developerPortal?.spec).toMatchObject({
       domain: 'Domain:default/developer-experience',
     });
+    expect(greenroomRepo?.spec).toMatchObject({
+      type: 'other',
+      system: 'System:default/dev-portal',
+    });
+    expect(greenroomRepo?.metadata.links).toEqual([
+      {
+        url: '/docs',
+        title: 'Documentation Index',
+        type: 'docs',
+      },
+      {
+        url: '/docs/getting-started/overview',
+        title: 'Getting Started Overview',
+        type: 'docs',
+      },
+      {
+        url: '/docs/adr/0002-entity-rendering',
+        title: 'ADR 0002: Entity Rendering',
+        type: 'adr',
+      },
+    ]);
+    expect(greenroomRepo?.location.file).toBe(path.join(process.cwd(), 'catalog-info.yaml'));
     expect(greenroomApi?.spec).toMatchObject({
       type: 'openapi',
       system: 'System:default/dev-portal',

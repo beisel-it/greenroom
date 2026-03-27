@@ -41,6 +41,7 @@ describe('catalog graph helper', () => {
     expect(response?.neighbors.owner?.entityRef).toBe('Group:default/platform-team');
     expect(response?.neighbors.domain?.entityRef).toBe('Domain:default/developer-experience');
     expect(response?.neighbors.componentsInSystem.map((ref) => ref.entityRef).sort()).toEqual([
+      'Component:default/greenroom',
       'Component:default/greenroom-web',
       'Component:platform/docs-service',
     ]);
