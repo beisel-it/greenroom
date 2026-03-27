@@ -43,27 +43,33 @@ const kindCopy: Record<CatalogKind, { heading: string; description: string; empt
 function EntityCard({ entity }: { entity: CatalogEntityWithRelationships }) {
   const summary = entity.metadata.description ?? entity.summary ?? 'View entity details';
   const owner = (entity.spec as { owner?: string }).owner;
-  const docsLink = entity.metadata.links?.[0];
+  const docsLinks = (entity.metadata.links ?? []).filter((link) => link.url.startsWith('/docs'));
+  const docsLink = docsLinks[0];
   const relatedSystem = entity.kind === 'System' ? entity.title : entity.relations.system?.title;
   const relatedDomain = entity.kind === 'Domain' ? entity.title : entity.relations.domain?.title;
+  const namespace = entity.metadata.namespace ?? 'default';
+  const lifecycle = 'lifecycle' in entity.spec ? (entity.spec as { lifecycle?: string }).lifecycle : undefined;
+  const isRepoOwned = entity.slug.includes('greenroom') || entity.title.toLowerCase().includes('greenroom');
 
   return (
-    <Link key={entity.slug} href={`/catalog/${entity.slug}`} className="entity-link">
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+    <Link key={entity.slug} href={`/catalog/${entity.slug}`} className="entity-link entity-link-compact">
+      <div className="entity-link-header" style={{ alignItems: 'flex-start' }}>
         <div>
           <strong>{entity.title}</strong>
           <div className="muted" style={{ marginTop: 4 }}>{entity.entityRef}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <span className="badge">{entity.kind}</span>
-        </div>
+        <span className="badge">{entity.kind}</span>
       </div>
       <p className="muted">{summary}</p>
       <div className="catalog-card-meta">
         {owner ? <span className="badge">Owner: {owner}</span> : null}
         {relatedDomain ? <span className="badge">Domain: {relatedDomain}</span> : null}
         {relatedSystem ? <span className="badge">System: {relatedSystem}</span> : null}
+        <span className="badge">Namespace: {namespace}</span>
+        {lifecycle ? <span className="badge">Lifecycle: {lifecycle}</span> : null}
         {docsLink ? <span className="badge">Reference: {docsLink.title ?? 'Linked doc'}</span> : null}
+        {docsLinks.length > 1 ? <span className="badge">{docsLinks.length} docs links</span> : null}
+        {isRepoOwned ? <span className="badge">Repo-owned</span> : null}
       </div>
     </Link>
   );
@@ -74,7 +80,7 @@ function GroupSection({ kind, entities }: { kind: CatalogKind; entities: Catalog
   const hasEntities = entities.length > 0;
 
   return (
-    <section className="panel" aria-label={`${copy.heading} group`}>
+    <section id={`catalog-group-${kind.toLowerCase()}`} className="panel catalog-group-panel" aria-label={`${copy.heading} group`}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'start' }}>
         <div>
           <div className="kicker">{copy.heading}</div>
@@ -96,7 +102,7 @@ function GroupSection({ kind, entities }: { kind: CatalogKind; entities: Catalog
 
 export function CatalogGroups({ grouped }: { grouped: CatalogGroupedEntities }) {
   return (
-    <div className="grid cols-2">
+    <div className="catalog-groups-grid">
       {catalogKindOrder.map((kind) => (
         <GroupSection key={kind} kind={kind} entities={grouped[kind] ?? []} />
       ))}

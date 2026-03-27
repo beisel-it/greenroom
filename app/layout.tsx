@@ -11,15 +11,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <main>
+        <div className="app-chroma" aria-hidden="true" />
+        <main className="app-shell">
           <header className="header">
-            <Link href="/" className="brand">Greenroom</Link>
+            <div className="header-brand">
+              <Link href="/" className="brand">Greenroom</Link>
+              <span className="header-meta">Catalog workbench for docs, systems, components, and APIs</span>
+            </div>
             <nav className="nav">
               <Link href="/catalog">Catalog</Link>
               <Link href="/docs">Docs</Link>
             </nav>
           </header>
-          {children}
+          <div className="app-main">{children}</div>
         </main>
       </body>
     </html>

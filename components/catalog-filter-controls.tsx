@@ -8,6 +8,8 @@ type CatalogFilterControlsProps = {
   filters: Pick<CatalogFilters, 'query' | 'owner' | 'tag' | 'kind' | 'namespace' | 'system'>;
   resultCount?: number;
   totalCount?: number;
+  docsLinkedCount?: number;
+  kindCounts?: Array<{ kind: CatalogKind; count: number }>;
   onQueryChange?: (query?: string) => void;
   onOwnerChange?: (owner?: string) => void;
   onTagChange?: (tag?: string) => void;
@@ -44,6 +46,8 @@ export function CatalogFilterControls({
   filters,
   resultCount,
   totalCount,
+  docsLinkedCount,
+  kindCounts = [],
   onQueryChange,
   onOwnerChange,
   onTagChange,
@@ -62,7 +66,7 @@ export function CatalogFilterControls({
   ].filter((value): value is string => Boolean(value));
 
   return (
-    <section className="panel" aria-label="Catalog filters">
+    <section className="panel catalog-filter-panel" aria-label="Catalog filters">
       <div className="catalog-filter-header">
         <div>
           <div className="kicker" style={{ marginBottom: 12 }}>
@@ -80,7 +84,7 @@ export function CatalogFilterControls({
         ) : null}
       </div>
 
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '16px 0 0' }}>
+      <label className="catalog-filter-search">
         <span>Search</span>
         <input
           id="query-filter"
@@ -92,7 +96,42 @@ export function CatalogFilterControls({
         />
       </label>
 
-      <div className="grid cols-3" style={{ gap: 12, marginTop: 16 }}>
+      <div className="catalog-sidebar-stats">
+        {typeof resultCount === 'number' ? (
+          <div className="catalog-sidebar-stat">
+            <strong>{resultCount}</strong>
+            <span className="muted">visible</span>
+          </div>
+        ) : null}
+        {typeof totalCount === 'number' ? (
+          <div className="catalog-sidebar-stat">
+            <strong>{totalCount}</strong>
+            <span className="muted">total</span>
+          </div>
+        ) : null}
+        {typeof docsLinkedCount === 'number' ? (
+          <div className="catalog-sidebar-stat">
+            <strong>{docsLinkedCount}</strong>
+            <span className="muted">docs-linked</span>
+          </div>
+        ) : null}
+      </div>
+
+      {kindCounts.length > 0 ? (
+        <div className="catalog-rail-section">
+          <div className="kicker">Kinds</div>
+          <div className="catalog-kind-jumps">
+            {kindCounts.map(({ kind, count }) => (
+              <a key={kind} href={`#catalog-group-${kind.toLowerCase()}`} className="catalog-kind-jump">
+                <span>{kind}</span>
+                <span className="badge">{count}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="catalog-filter-grid">
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span>Owner</span>
           <select

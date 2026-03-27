@@ -7,6 +7,7 @@ import {
   CatalogEntityWithRelationships,
   CatalogFacets,
   CatalogFilters,
+  catalogKindOrder,
   filterCatalogEntities,
   groupCatalogEntities,
 } from '@/lib/catalog-core';
@@ -50,6 +51,13 @@ function deriveDocsPresence(entities: CatalogEntityWithRelationships[]) {
   return { docsLinkedEntities, adrLinkedEntities };
 }
 
+function deriveKindCounts(entities: CatalogEntityWithRelationships[]) {
+  return catalogKindOrder.map((kind) => ({
+    kind,
+    count: entities.filter((entity) => entity.kind === kind).length,
+  }));
+}
+
 type CatalogPageContentProps = {
   entities: CatalogEntityWithRelationships[];
   facets: CatalogFacets;
@@ -62,6 +70,7 @@ export function CatalogPageContent({ entities, facets }: CatalogPageContentProps
   const grouped = React.useMemo(() => groupCatalogEntities(filteredEntities), [filteredEntities]);
   const discoverySummary = React.useMemo(() => deriveDiscoverySummary(entities), [entities]);
   const docsPresence = React.useMemo(() => deriveDocsPresence(entities), [entities]);
+  const kindCounts = React.useMemo(() => deriveKindCounts(filteredEntities), [filteredEntities]);
 
   return (
     <>
@@ -70,7 +79,8 @@ export function CatalogPageContent({ entities, facets }: CatalogPageContentProps
           <div className="kicker">Discovery</div>
           <h2 style={{ marginBottom: 8 }}>Find the right owner, system, API, or doc entry point fast.</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Start with search, narrow by facets, then jump into entity details or the docs index.
+            The default state stays useful before filtering: grouped kinds, docs-linked entities, and ownership signals
+            stay visible on wide screens.
           </p>
         </div>
         <div className="catalog-discovery-metrics">
@@ -96,18 +106,17 @@ export function CatalogPageContent({ entities, facets }: CatalogPageContentProps
             <strong>Open docs index</strong>
             <p className="muted" style={{ marginBottom: 0 }}>Browse implementation and ADR context alongside the catalog.</p>
           </Link>
+          <Link href="/" className="entity-link">
+            <strong>Return to unified search</strong>
+            <p className="muted" style={{ marginBottom: 0 }}>Move back into the home workbench when you need cross-surface search.</p>
+          </Link>
         </div>
       </section>
 
       <section
-        className="panel"
+        className="panel catalog-context-panel"
         aria-label="Docs and catalog context"
-        style={{
-          display: 'grid',
-          gap: 16,
-          gridTemplateColumns: 'minmax(0, 1.2fr) minmax(180px, .5fr) minmax(260px, .8fr)',
-          marginBottom: 16,
-        }}
+        style={{ marginBottom: 16 }}
       >
         <div>
           <div className="kicker">Docs + Catalog</div>
@@ -142,20 +151,45 @@ export function CatalogPageContent({ entities, facets }: CatalogPageContentProps
         </div>
       </section>
 
-      <CatalogFilterControls
-        facets={facets}
-        filters={filters}
-        resultCount={filteredEntities.length}
-        totalCount={entities.length}
-        onQueryChange={(query) => setFilters((prev) => ({ ...prev, query }))}
-        onOwnerChange={(owner) => setFilters((prev) => ({ ...prev, owner }))}
-        onTagChange={(tag) => setFilters((prev) => ({ ...prev, tag }))}
-        onKindChange={(kind) => setFilters((prev) => ({ ...prev, kind: kind as CatalogFilters['kind'] }))}
-        onNamespaceChange={(namespace) => setFilters((prev) => ({ ...prev, namespace }))}
-        onSystemChange={(system) => setFilters((prev) => ({ ...prev, system }))}
-        onReset={() => setFilters({})}
-      />
-      <CatalogGroups grouped={grouped} />
+      <div className="catalog-workbench">
+        <aside className="catalog-workbench-rail">
+          <CatalogFilterControls
+            facets={facets}
+            filters={filters}
+            resultCount={filteredEntities.length}
+            totalCount={entities.length}
+            docsLinkedCount={docsPresence.docsLinkedEntities}
+            kindCounts={kindCounts}
+            onQueryChange={(query) => setFilters((prev) => ({ ...prev, query }))}
+            onOwnerChange={(owner) => setFilters((prev) => ({ ...prev, owner }))}
+            onTagChange={(tag) => setFilters((prev) => ({ ...prev, tag }))}
+            onKindChange={(kind) => setFilters((prev) => ({ ...prev, kind: kind as CatalogFilters['kind'] }))}
+            onNamespaceChange={(namespace) => setFilters((prev) => ({ ...prev, namespace }))}
+            onSystemChange={(system) => setFilters((prev) => ({ ...prev, system }))}
+            onReset={() => setFilters({})}
+          />
+        </aside>
+
+        <div className="catalog-workbench-main">
+          <section className="panel catalog-group-summary" aria-label="Catalog group summary">
+            <div>
+              <div className="kicker">Browse</div>
+              <h2 style={{ margin: '8px 0' }}>Grouped discovery stays dense and scan-friendly.</h2>
+              <p className="muted" style={{ margin: 0 }}>
+                Card summaries now expose ownership, domain, system, namespace, docs links, and repo-owned signals
+                before you open a detail page.
+              </p>
+            </div>
+            <div className="catalog-summary-inline">
+              <span className="badge">{filteredEntities.length} visible</span>
+              <span className="badge">{docsPresence.docsLinkedEntities} docs-linked</span>
+              <span className="badge">{docsPresence.adrLinkedEntities} adr-linked</span>
+            </div>
+          </section>
+
+          <CatalogGroups grouped={grouped} />
+        </div>
+      </div>
     </>
   );
 }

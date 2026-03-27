@@ -35,8 +35,11 @@ describe('home page unified search', () => {
       summary: entity.summary,
       entityRef: entity.entityRef,
       kind: entity.kind,
+      namespace: entity.metadata.namespace ?? 'default',
       owner: 'owner' in entity.spec ? (entity.spec as { owner?: string }).owner : undefined,
       tags: entity.metadata.tags ?? [],
+      docsLinks: (entity.metadata.links ?? []).filter((link) => link.url.startsWith('/docs')).length,
+      isRepoOwned: entity.slug.includes('greenroom') || entity.title.toLowerCase().includes('greenroom'),
     }));
     const docs = getDocPages().map((doc) => ({
       slug: doc.slug,
