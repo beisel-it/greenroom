@@ -39,5 +39,6 @@ describe('DocsLayout', () => {
 
     expect(markup).toContain('docs-nav');
     expect(markup).toContain('Index Content');
+    expect(markup).toContain('<div class="kicker">Section</div><h2 style="margin:6px 0 8px">Documentation</h2>');
   });
 });

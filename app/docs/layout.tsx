@@ -17,8 +17,8 @@ export default async function DocsLayout({
   const activeSlug = slug.join('/');
   const currentPage = activeSlug ? getDocPage(slug) : undefined;
   const currentNavItem = activeSlug ? navItems.find((item) => item.slug === activeSlug) : undefined;
-  const sectionSlug = slug[0];
-  const activeSection = sectionSlug ? tree.find((node) => node.slug === sectionSlug) : tree[0];
+  const sectionSlug = currentPage?.slugParts[0] ?? slug[0];
+  const activeSection = sectionSlug ? tree.find((node) => node.slug === sectionSlug) : undefined;
   const relatedEntities = getCatalogEntities().filter((entity) =>
     (entity.metadata.links ?? []).some((link) => {
       if (!link.url.startsWith('/docs')) return false;
