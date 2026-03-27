@@ -28,6 +28,7 @@ describe('CatalogFilterControls', () => {
     namespaces: ['default', 'platform'],
     systems: ['dev-portal', 'data-plane'],
     domains: ['Domain:default/developer-experience'],
+    lifecycles: ['experimental', 'production'],
   };
 
   it('renders All options and facet-derived choices', () => {

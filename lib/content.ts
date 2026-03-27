@@ -7,7 +7,9 @@ import { loadCatalogEntitiesFromYaml } from './catalog-loader';
 import type { LoadedCatalogEntity } from './catalog-loader';
 import {
   attachCatalogRelationships,
+  buildCatalogDiscoveryModel,
   CatalogEntityWithRelationships,
+  CatalogDiscoveryModel,
   CatalogFacets,
   CatalogFilters,
   CatalogGroupedEntities,
@@ -23,6 +25,7 @@ export type CatalogContent = {
   grouped: CatalogGroupedEntities;
   facets: CatalogFacets;
   relationships: DerivedRelationshipMaps;
+  discovery: CatalogDiscoveryModel;
 };
 
 export type DocPage = {
@@ -102,6 +105,7 @@ export function getCatalogContent(
     grouped: groupCatalogEntities(filteredEntities, catalogKindOrder),
     facets: getCatalogFacets(allEntities),
     relationships,
+    discovery: buildCatalogDiscoveryModel(filteredEntities),
   };
 }
 
