@@ -15,7 +15,7 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
   if (!page) notFound();
 
   return (
-    <article>
+    <article style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div className="kicker">Documentation</div>
       <h1>{page.title}</h1>
       <p className="muted">{page.summary}</p>

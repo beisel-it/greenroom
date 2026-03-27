@@ -21,6 +21,12 @@ export function DocsPrevNext({
 
   return (
     <nav className="docs-prev-next" aria-label="Previous and next documentation pages">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="kicker">Reading Path</div>
+        <p className="muted" style={{ margin: 0 }}>
+          Stay in the narrative flow here, then use the catalog pivots in the context rail when you need ownership or system metadata.
+        </p>
+      </div>
       <div className="docs-prev-next-grid">
         {previous ? (
           <Link href={`/docs/${previous.slug}`} className="docs-prev-next-link previous">

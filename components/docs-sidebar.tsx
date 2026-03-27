@@ -6,8 +6,12 @@ export function DocsSidebar({ tree, activeSlug }: { tree: DocTreeNode[]; activeS
   return (
     <nav aria-label="Docs navigation" className="docs-nav">
       {tree.map((node) => (
-        <div key={node.slug} className="docs-nav-section">
-          <div className="docs-nav-section-title">{node.title}</div>
+        <div key={node.slug} className="docs-nav-section" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div className="docs-nav-section-title">{node.title}</div>
+            <span className="badge">{node.children.length}</span>
+          </div>
+          {node.summary ? <p className="muted" style={{ margin: 0, fontSize: '.95rem' }}>{node.summary}</p> : null}
           {node.children.length ? <DocsNavList nodes={node.children} activeSlug={activeSlug} /> : null}
         </div>
       ))}
@@ -26,7 +30,12 @@ function DocsNavList({ nodes, activeSlug }: { nodes: DocTreeNode[]; activeSlug?:
               className={`docs-nav-link${activeSlug === node.slug ? ' active' : ''}`}
               aria-current={activeSlug === node.slug ? 'page' : undefined}
             >
-              {node.title}
+              <span>{node.title}</span>
+              {node.summary ? (
+                <small className="muted" style={{ display: 'block', marginTop: 4, fontSize: '.8rem', lineHeight: 1.45 }}>
+                  {node.summary}
+                </small>
+              ) : null}
             </Link>
           ) : (
             <>
