@@ -100,7 +100,7 @@ Core building blocks:
 
 Greenroom already exposes catalog relationships without inventing a custom DSL.
 
-`GET /api/catalog/entities/:kind/:namespace/:name/relations`
+`GET /api/catalog/entities/relations/:kind/:namespace/:name`
 
 The current graph surface includes:
 
@@ -133,7 +133,7 @@ Useful entry points:
 
 - app shell: [app/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/page.tsx)
 - catalog index: [app/catalog/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/catalog/page.tsx)
-- catalog entity page: [app/catalog/[slug]/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/catalog/[slug]/page.tsx)
+- catalog entity page: [app/catalog/[...slug]/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/catalog/[...slug]/page.tsx)
 - docs shell: [app/docs/[...slug]/page.tsx](/home/florian/.openclaw/workspace/greenroom/app/docs/[...slug]/page.tsx)
 
 ## 📁 Content Layout

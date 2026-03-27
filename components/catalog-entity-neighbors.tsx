@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import type { CatalogEntityWithRelationships } from '@/lib/content';
+import type { CatalogEntityWithRelationships } from '@/lib/catalog-core';
 import {
   filterCatalogNeighborGroups,
   getCatalogNeighborGroups,
